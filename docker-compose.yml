@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: musicapp
+      POSTGRES_PASSWORD: musicapp_dev
+      POSTGRES_DB: musicapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://musicapp:musicapp_dev@postgres:5432/musicapp
+      REDIS_URL: redis://redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      NODE_ENV: development
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./packages/backend/src:/app/src
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+  workers:
+    build:
+      context: .
+      dockerfile: Dockerfile.workers
+    environment:
+      REDIS_URL: redis://redis:6379
+      BACKEND_API_BASE: http://backend:3000/api
+    depends_on:
+      - redis
+      - backend
+    volumes:
+      - ./packages/workers/src:/app/src
+
+volumes:
+  postgres_data:

@@ -1,0 +1,213 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User & Project Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Audio input
+  audioUrl    String
+  audioPath   String?
+  duration    Float // in seconds
+  
+  // Lip-sync settings
+  performanceDensity Float @default(0.4) // 0-1, percentage of scenes with lip-sync
+  
+  // Status
+  status      String   @default("draft") // draft, processing, completed, failed
+  progress    Float    @default(0) // 0-1
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  storyboard  Storyboard?
+  scenes      Scene[]
+  videos      GeneratedVideo[]
+  jobs        ProcessingJob[]
+}
+
+// Storyboard - overall structure
+model Storyboard {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Parsed lyrics with timing
+  lyricsData Json? // { lines: [{ text, startTime, endTime }] }
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Scene - individual clips
+model Scene {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Scene positioning
+  order     Int
+  startTime Float // in seconds
+  endTime   Float
+  
+  // Scene type and content
+  sceneType String // "performance" | "broll"
+  prompt    String // detailed Sora prompt
+  
+  // Lip-sync configuration
+  lipSyncEnabled Boolean @default(false)
+  lipSyncMethod  String? // "sora_native" | "post_process"
+  
+  // Content references
+  lyricExcerpt String? // exact words for this scene
+  lyricIndices Json? // { startWord, endWord } indices in full lyrics
+  
+  // Asset references
+  referenceImageUrl String? // optional character reference
+  vocalSegmentAssetId String? // extracted vocal audio for this scene
+  
+  // Quality control
+  mouthVisibilityScore Float? // 0-1, auto QC result
+  mouthVisibilityRequired Boolean @default(true)
+  
+  // Generation state
+  soraClipId String? // returned by Sora API
+  soraClipUrl String? // video URL from Sora
+  finalVideoUrl String? // after post-processing
+  
+  status    String @default("pending") // pending, generating, post_processing, completed, failed
+  error     String?
+  retryCount Int @default(0)
+  maxRetries Int @default(3)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([projectId])
+  @@index([order])
+}
+
+// Extracted vocal audio for each scene
+model VocalSegment {
+  id        String   @id @default(cuid())
+  sceneId   String
+  
+  // Audio data
+  audioPath String
+  audioUrl  String?
+  format    String @default("mp3")
+  duration  Float
+  
+  // Alignment data
+  phonemes  Json? // [{ phoneme, startTime, endTime }]
+  words     Json? // [{ word, startTime, endTime }]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([sceneId])
+}
+
+// Generated videos and intermediates
+model GeneratedVideo {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Video metadata
+  type      String // "final" | "intermediate" | "sora_raw" | "lip_synced"
+  url       String
+  thumbnailUrl String?
+  duration  Float?
+  
+  // Version tracking
+  version   Int @default(1)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([projectId])
+  @@index([type])
+}
+
+// Processing jobs for queue system
+model ProcessingJob {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Job details
+  type      String // "generate_scenes" | "vocal_extraction" | "forced_alignment" | "lip_sync_post_process" | "stitch_final"
+  sceneId   String? // if processing specific scene
+  
+  // Queue data
+  status    String @default("pending") // pending, processing, completed, failed
+  queueJobId String? // ID from Bull queue
+  
+  // Execution details
+  priority  Int @default(0)
+  retryCount Int @default(0)
+  maxRetries Int @default(3)
+  
+  // Error handling
+  error     String?
+  errorStackTrace String?
+  
+  // Metrics
+  startedAt DateTime?
+  completedAt DateTime?
+  duration  Float? // in seconds
+  
+  // Results
+  resultData Json? // job-specific results
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([projectId])
+  @@index([type])
+  @@index([status])
+}
+
+// API usage tracking
+model ApiUsage {
+  id        String   @id @default(cuid())
+  projectId String
+  
+  // Sora API calls
+  soraCallsCount Int @default(0)
+  soraTokensUsed Float @default(0)
+  
+  // Other API usage
+  apiName   String
+  endpoint  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([projectId])
+}
