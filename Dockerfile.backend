@@ -1,27 +1,45 @@
-# Backend
+# Backend build stage
+FROM node:20-alpine AS builder
+
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy package files and Prisma schema first for deterministic installs
+COPY packages/backend/package*.json ./
+COPY packages/backend/prisma ./prisma
+
+# Install all dependencies (dev + prod) for building TypeScript
+RUN npm install
+
+# Copy source and config
+COPY packages/backend/src ./src
+COPY packages/backend/tsconfig.json ./
+
+# Build TypeScript output
+RUN npm run build
+
+# Final runtime stage
 FROM node:20-alpine
 
 RUN apk add --no-cache openssl
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and Prisma schema
 COPY packages/backend/package*.json ./
-
-# Copy prisma schema BEFORE npm install so postinstall can generate client
 COPY packages/backend/prisma ./prisma
 
-# Install dependencies - this will trigger postinstall to generate Prisma client
-RUN npm install
+# Install only production dependencies
+RUN npm install --omit=dev
 
-# Copy source code
-COPY packages/backend/src ./src
-COPY packages/backend/tsconfig.json ./
+# Generate Prisma client in the runtime image
+RUN npx prisma generate
 
-# Build TypeScript
-RUN npm run build
+# Copy compiled output from builder
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-# Run migrations and then start the app
-CMD ["sh", "-c", "npm run prisma:push && npm start"]
+# Run migrations then start server
+CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
