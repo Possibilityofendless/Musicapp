@@ -3,6 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes, { authMiddleware } from "./routes/auth";
 import projectRoutes from "./routes/projects";
+import characterRoutes from "./routes/characters";
+import sceneRoutes from "./routes/scenes";
+import storyboardRoutes from "./routes/storyboard";
 import { registerJobProcessors } from "./workers/jobProcessor";
 import prisma from "./lib/prisma";
 
@@ -19,12 +22,16 @@ app.use(cors());
 app.get("/", (req, res) => {
   res.json({
     name: "MusicApp API",
-    version: "1.0.0",
+    version: "2.0.0",
     status: "running",
+    features: ["audio-analysis", "scene-generation", "lip-sync", "character-persistence"],
     endpoints: {
       health: "/health",
       auth: "/api/auth",
       projects: "/api/projects",
+      characters: "/api/projects/:id/characters",
+      scenes: "/api/projects/:id/scenes",
+      storyboard: "/api/projects/:id/storyboard",
     },
   });
 });
@@ -37,6 +44,9 @@ app.get("/health", (req, res) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api", authMiddleware, projectRoutes);
+app.use("/api", authMiddleware, characterRoutes);
+app.use("/api", authMiddleware, sceneRoutes);
+app.use("/api", authMiddleware, storyboardRoutes);
 
 // Error handling
 app.use(

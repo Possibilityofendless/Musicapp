@@ -34,8 +34,18 @@ model Project {
   audioPath   String?
   duration    Float // in seconds
   
+  // Video generation settings
+  format      String   @default("landscape") // landscape | portrait
+  clipSeconds Int      @default(8) // 4, 8, or 12
+  soraModel   String   @default("sora-2") // sora-2 | sora-2-pro
+  
   // Lip-sync settings
   performanceDensity Float @default(0.4) // 0-1, percentage of scenes with lip-sync
+  
+  // Cost control
+  budgetCapUsd Float     @default(25.0)
+  estimatedCostUsd Float  @default(0)
+  actualCostUsd Float     @default(0)
   
   // Status
   status      String   @default("draft") // draft, processing, completed, failed
@@ -46,8 +56,36 @@ model Project {
 
   storyboard  Storyboard?
   scenes      Scene[]
+  characters  Character[]
   videos      GeneratedVideo[]
   jobs        ProcessingJob[]
+}
+
+// Character - persistent identity
+model Character {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Identity
+  name      String
+  description String?
+  
+  // Character bible
+  bible     Json? // { face, signature, wardrobe_lock, dos, donts }
+  
+  // Reference assets
+  referenceImageUrl String? // keyframe for character consistency
+  referenceAssetPath String?
+  
+  // Usage
+  isPrimary Boolean @default(false)
+  appearanceCount Int @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([projectId])
 }
 
 // Storyboard - overall structure
@@ -56,8 +94,15 @@ model Storyboard {
   projectId String   @unique
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
+  // Beat/section metadata
+  beatGrid  Json? // { bpm, beats: [{ time, strength }] }
+  sections  Json? // { name, startTime, endTime, type }[]
+  
   // Parsed lyrics with timing
   lyricsData Json? // { lines: [{ text, startTime, endTime }] }
+  
+  // Energy curve
+  energyCurve Json? // { samples: [{ time, energy }] }
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -73,10 +118,21 @@ model Scene {
   order     Int
   startTime Float // in seconds
   endTime   Float
+  duration  Float? // auto-computed
   
   // Scene type and content
   sceneType String // "performance" | "broll"
+  section   String? // intro, verse, chorus, bridge, outro
+  
+  // Mood metadata
+  mood      Json? // { valence, energy, tension }
+  
+  // Character assignments
+  characterIds String[] @default([]) // array of character IDs
+  
+  // Sora settings
   prompt    String // detailed Sora prompt
+  soraSize  String @default("1280x720") // landscape default
   
   // Lip-sync configuration
   lipSyncEnabled Boolean @default(false)
@@ -95,9 +151,11 @@ model Scene {
   mouthVisibilityRequired Boolean @default(true)
   
   // Generation state
-  soraClipId String? // returned by Sora API
-  soraClipUrl String? // video URL from Sora
-  finalVideoUrl String? // after post-processing
+  selectedVersionId String? // which version is "final"
+  
+  // Metrics
+  estimatedCostUsd Float @default(0)
+  actualCostUsd Float @default(0)
   
   status    String @default("pending") // pending, generating, post_processing, completed, failed
   error     String?
@@ -107,28 +165,67 @@ model Scene {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  versions  SceneVersion[]
+  
   @@index([projectId])
   @@index([order])
+}
+
+// SceneVersion - A/B versioning for scenes
+model SceneVersion {
+  id        String   @id @default(cuid())
+  sceneId   String
+  scene     Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  
+  // Version metadata
+  take      Int // 1, 2, 3...
+  prompt    String // the prompt used for this take
+  
+  // Results
+  soraClipId String? // returned by Sora API
+  soraClipUrl String? // video URL from Sora
+  finalVideoUrl String? // after post-processing
+  thumbnailUrl String?
+  
+  // QC scores
+  characterConsistencyScore Float? // 0-1
+  mouthVisibilityScore Float? // 0-1
+  qualityScore Float? // aggregate quality 0-1
+  userScore Float? // user rating 0-1
+  
+  // Selection
+  isSelected Boolean @default(false)
+  selectedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([sceneId])
+  @@unique([sceneId, take])
 }
 
 // Extracted vocal audio for each scene
 model VocalSegment {
   id        String   @id @default(cuid())
-  sceneId   String
+  projectId String   // added to track at project level
+  sceneId   String?
   
   // Audio data
   audioPath String
   audioUrl  String?
   format    String @default("mp3")
   duration  Float
+  startTime Float // in project timeline
+  endTime   Float
   
-  // Alignment data
-  phonemes  Json? // [{ phoneme, startTime, endTime }]
-  words     Json? // [{ word, startTime, endTime }]
+  // Alignment data (from forced alignment or transcription)
+  phonemes  Json? // [{ phoneme, startTime, endTime, confidence }]
+  words     Json? // [{ word, startTime, endTime, confidence }]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  @@index([projectId])
   @@index([sceneId])
 }
 

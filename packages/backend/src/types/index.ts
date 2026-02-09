@@ -33,18 +33,23 @@ export interface PerformancePrompt {
 
 // Job types
 export type JobType =
+  | "analyze_audio"
   | "generate_scenes"
+  | "generate_scene"
+  | "remix_scene"
   | "vocal_extraction"
   | "forced_alignment"
   | "lip_sync_post_process"
   | "stitch_final"
-  | "quality_check";
+  | "quality_check"
+  | "assemble_project";
 
 export interface JobPayload {
   projectId: string;
   sceneId?: string;
   type: JobType;
-  data: Record<string, unknown>;
+  data?: Record<string, unknown>;
+  payload?: Record<string, unknown>;
 }
 
 export interface ProcessingResult {

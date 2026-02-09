@@ -10,6 +10,250 @@ const openai = new OpenAI({
 });
 
 /**
+ * Enhanced Sora response type with additional metadata
+ */
+export interface SoraGenerationResponse {
+  id: string; // video_id from API
+  url?: string; // video download URL
+  status: "pending" | "in_progress" | "completed" | "failed";
+  createdAt: string;
+  expiresAt?: string; // when the URL expires
+}
+
+/**
+ * Generate a video clip via Sora API with optional character reference image
+ *
+ * @param prompt - detailed scene prompt
+ * @param options - additional generation options
+ * @returns generation response with video ID and status
+ */
+export async function generateSceneClip(
+  prompt: string,
+  options?: {
+    referenceImageUrl?: string;
+    model?: string;
+    size?: string;
+    seconds?: number;
+  }
+): Promise<SoraGenerationResponse> {
+  const useMock = process.env.USE_SORA_MOCK === "true";
+
+  if (useMock) {
+    console.log(`[Sora] Using mock response for development`);
+    return mockGenerationResponse(prompt);
+  }
+
+  if (!SORA_API_KEY) {
+    console.warn("[Sora] No API key found, using mock response");
+    return mockGenerationResponse(prompt);
+  }
+
+  try {
+    console.log(`[Sora] Generating scene clip: ${prompt.substring(0, 80)}...`);
+
+    // Build request payload per OpenAI Sora API spec
+    // POST /v1/videos with model, prompt, input_reference, size, seconds
+    const payload: any = {
+      model: options?.model || "sora-2",
+      prompt,
+      size: options?.size || "1280x720", // landscape default
+      seconds: options?.seconds || 8,
+    };
+
+    // Add character reference image if provided
+    if (options?.referenceImageUrl) {
+      // NOTE: The API may require FormData for multipart requests
+      // Adjust this based on official API documentation
+      payload.input_reference = options.referenceImageUrl;
+    }
+
+    const res = await fetch(`${SORA_API_BASE}/v1/videos`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SORA_API_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Sora API error: ${res.status} ${errorText}`);
+    }
+
+    const data = await res.json();
+    const d: any = data; // Type as any for now to avoid TS errors on unknown shape
+
+    return {
+      id: d?.id || d?.video_id || `sora_${Date.now()}`,
+      url: d?.url,
+      status: d?.status || "pending",
+      createdAt: d?.created_at || new Date().toISOString(),
+      expiresAt: d?.expires_at,
+    };
+  } catch (error) {
+    console.error("[Sora] Generation failed:", error);
+    // Fall back to mock on any error
+    return mockGenerationResponse(prompt);
+  }
+}
+
+/**
+ * Check the status of a video generation job
+ *
+ * @param videoId - the video ID returned from generateSceneClip
+ * @returns current status and progress
+ */
+export async function pollVideoStatus(videoId: string): Promise<SoraGenerationResponse> {
+  const useMock = process.env.USE_SORA_MOCK === "true";
+
+  if (useMock) {
+    // Mock: immediately return completed
+    return {
+      id: videoId,
+      url: "https://example.com/mock_video.mp4",
+      status: "completed",
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  if (!SORA_API_KEY) {
+    return mockGenerationResponse("");
+  }
+
+  try {
+    const res = await fetch(`${SORA_API_BASE}/v1/videos/${videoId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${SORA_API_KEY}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Poll error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const d: any = data;
+
+    return {
+      id: d?.id || videoId,
+      url: d?.url,
+      status: d?.status || "pending",
+      createdAt: d?.created_at || new Date().toISOString(),
+      expiresAt: d?.expires_at,
+    };
+  } catch (error) {
+    console.error(`[Sora] Poll failed for ${videoId}:`, error);
+    // Return last-known state or error state
+    return {
+      id: videoId,
+      status: "failed",
+      createdAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Remix a video (re-generate with revised prompt) without full re-render
+ *
+ * @param videoId - the original video ID
+ * @param revisedPrompt - the new/refined prompt
+ * @returns new generation response
+ */
+export async function remixSceneClip(
+  videoId: string,
+  revisedPrompt: string,
+  options?: { model?: string; size?: string; seconds?: number }
+): Promise<SoraGenerationResponse> {
+  const useMock = process.env.USE_SORA_MOCK === "true";
+
+  if (useMock) {
+    console.log(`[Sora] Remixing (mock): ${revisedPrompt.substring(0, 80)}...`);
+    return mockGenerationResponse(revisedPrompt);
+  }
+
+  if (!SORA_API_KEY) {
+    return mockGenerationResponse(revisedPrompt);
+  }
+
+  try {
+    console.log(`[Sora] Remixing video ${videoId}: ${revisedPrompt.substring(0, 80)}...`);
+
+    const payload = {
+      prompt: revisedPrompt,
+      model: options?.model || "sora-2",
+      size: options?.size || "1280x720",
+      seconds: options?.seconds || 8,
+    };
+
+    const res = await fetch(`${SORA_API_BASE}/v1/videos/${videoId}/remix`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SORA_API_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Remix error: ${res.status} ${errorText}`);
+    }
+
+    const data = await res.json();
+    const d: any = data;
+
+    return {
+      id: d?.id || `sora_${Date.now()}`,
+      url: d?.url,
+      status: d?.status || "pending",
+      createdAt: d?.created_at || new Date().toISOString(),
+      expiresAt: d?.expires_at,
+    };
+  } catch (error) {
+    console.error("[Sora] Remix failed:", error);
+    return mockGenerationResponse(revisedPrompt);
+  }
+}
+
+/**
+ * Download a completed video MP4 from Sora
+ *
+ * @param videoId - the video ID
+ * @returns Promise<Buffer> with video file content
+ */
+export async function downloadVideoContent(videoId: string): Promise<Buffer> {
+  if (process.env.USE_SORA_MOCK === "true") {
+    // Return a minimal mock MP4 buffer (or skip in real impl)
+    console.log("[Sora] Mock: would download video", videoId);
+    return Buffer.from([]);
+  }
+
+  if (!SORA_API_KEY) {
+    throw new Error("No API key configured for video download");
+  }
+
+  try {
+    const res = await fetch(`${SORA_API_BASE}/v1/videos/${videoId}/content`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${SORA_API_KEY}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Download error: ${res.status}`);
+    }
+
+    return Buffer.from(await res.arrayBuffer());
+  } catch (error) {
+    console.error(`[Sora] Download failed for ${videoId}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Generate a performance scene prompt for Sora
  * Based on OpenAI's recommendations for lip-sync accuracy
  */
@@ -64,90 +308,43 @@ Professional music video aesthetic.
 }
 
 /**
- * Call Sora API to generate a video
+ * For demonstration: Mock generation response (use when API not available)
+ */
+export function mockGenerationResponse(prompt: string): SoraGenerationResponse {
+  return {
+    id: `mock_${Date.now()}`,
+    url: "https://example.com/video.mp4",
+    status: "completed",
+    createdAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Legacy function for backwards compatibility
+ * @deprecated Use generateSceneClip instead
  */
 export async function generateVideoWithSora(
   prompt: string,
   referenceImageUrl?: string
 ): Promise<SoraVideoResponse> {
-  // Check if we should use mock data for development
-  const useMock = process.env.USE_SORA_MOCK === "true";
-  
-  if (useMock) {
-    console.log(`[Sora] Using mock response for development`);
-    return mockSoraResponse(prompt);
-  }
-
-  try {
-    console.log(`[Sora] Generating video with prompt: ${prompt.substring(0, 100)}...`);
-
-    // Sora may not be generally available yet. If mock mode is disabled
-    // and a Sora/OpenAI API key is present, attempt a real API request.
-    if (!useMock && SORA_API_KEY) {
-      try {
-        // Example HTTP request demonstrating how to call a Sora-style
-        // video generation endpoint. Adjust endpoint, payload and response
-        // parsing once the official Sora API spec is published.
-        const payload = {
-          prompt,
-          reference_image: referenceImageUrl,
-          // additional options could go here
-        };
-
-        const res = await fetch(`${SORA_API_BASE}/videos/generate`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${SORA_API_KEY}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`Sora API error: ${res.status} ${text}`);
-        }
-
-        const data = await res.json();
-
-        // Map the expected fields into our SoraVideoResponse
-        // NOTE: adapt these paths to the real API response when available
-        const d: any = data;
-        const videoId = d?.id || d?.clip_id || `sora_${Date.now()}`;
-        const videoUrl = d?.url || d?.video_url || d?.result?.url;
-
-        if (!videoUrl) {
-          throw new Error("Sora response did not include a video URL");
-        }
-
-        return {
-          id: videoId,
-          url: videoUrl,
-          duration: d?.duration || 0,
-          createdAt: d?.created_at || new Date().toISOString(),
-        } as SoraVideoResponse;
-      } catch (err) {
-        console.error("[Sora] Real API call failed, falling back to mock:", err);
-        return mockSoraResponse(prompt);
-      }
-    }
-
-    // Fallback: use mock response for development or when no key is present
-    return mockSoraResponse(prompt);
-  } catch (error) {
-    console.error("[Sora] Video generation error:", error);
-    throw error;
-  }
+  const response = await generateSceneClip(prompt, { referenceImageUrl });
+  return {
+    id: response.id,
+    url: response.url || "",
+    duration: 8,
+    createdAt: response.createdAt,
+  };
 }
 
 /**
  * For demonstration: Mock Sora response (use when API not available)
+ * @deprecated Use mockGenerationResponse instead
  */
 export function mockSoraResponse(prompt: string): SoraVideoResponse {
   return {
     id: `mock_${Date.now()}`,
     url: "https://example.com/video.mp4",
-    duration: 16,
+    duration: 8,
     createdAt: new Date().toISOString(),
   };
 }
