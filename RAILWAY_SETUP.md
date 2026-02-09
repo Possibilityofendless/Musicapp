@@ -29,8 +29,8 @@ Go to your Railway Dashboard and:
 ```
 NODE_ENV=production
 JWT_SECRET=your-secret-key-change-this
-OPENAI_API_KEY=sk-your-key (optional for Sora)
-USE_SORA_MOCK=true
+OPENAI_API_KEY=sk-your-key (required for Sora)
+USE_SORA_MOCK=false
 ```
 
 ## Local Development Setup

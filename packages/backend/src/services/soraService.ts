@@ -1,13 +1,15 @@
-import OpenAI from "openai";
 import { PerformancePrompt, SoraVideoResponse } from "../types";
 
 // Prefer an explicit Sora key when available; fall back to OPENAI_API_KEY
 const SORA_API_KEY = process.env.SORA_API_KEY || process.env.OPENAI_API_KEY;
 const SORA_API_BASE = process.env.SORA_API_BASE_URL || "https://api.openai.com/v1";
+const USE_SORA_MOCK = process.env.USE_SORA_MOCK === "true";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+if (!SORA_API_KEY && !USE_SORA_MOCK) {
+  throw new Error(
+    "SORA_API_KEY (or OPENAI_API_KEY) is required when USE_SORA_MOCK is false."
+  );
+}
 
 /**
  * Enhanced Sora response type with additional metadata
@@ -36,15 +38,8 @@ export async function generateSceneClip(
     seconds?: number;
   }
 ): Promise<SoraGenerationResponse> {
-  const useMock = process.env.USE_SORA_MOCK === "true";
-
-  if (useMock) {
+  if (USE_SORA_MOCK) {
     console.log(`[Sora] Using mock response for development`);
-    return mockGenerationResponse(prompt);
-  }
-
-  if (!SORA_API_KEY) {
-    console.warn("[Sora] No API key found, using mock response");
     return mockGenerationResponse(prompt);
   }
 
@@ -105,9 +100,7 @@ export async function generateSceneClip(
  * @returns current status and progress
  */
 export async function pollVideoStatus(videoId: string): Promise<SoraGenerationResponse> {
-  const useMock = process.env.USE_SORA_MOCK === "true";
-
-  if (useMock) {
+  if (USE_SORA_MOCK) {
     // Mock: immediately return completed
     return {
       id: videoId,
@@ -115,10 +108,6 @@ export async function pollVideoStatus(videoId: string): Promise<SoraGenerationRe
       status: "completed",
       createdAt: new Date().toISOString(),
     };
-  }
-
-  if (!SORA_API_KEY) {
-    return mockGenerationResponse("");
   }
 
   try {
@@ -166,14 +155,8 @@ export async function remixSceneClip(
   revisedPrompt: string,
   options?: { model?: string; size?: string; seconds?: number }
 ): Promise<SoraGenerationResponse> {
-  const useMock = process.env.USE_SORA_MOCK === "true";
-
-  if (useMock) {
+  if (USE_SORA_MOCK) {
     console.log(`[Sora] Remixing (mock): ${revisedPrompt.substring(0, 80)}...`);
-    return mockGenerationResponse(revisedPrompt);
-  }
-
-  if (!SORA_API_KEY) {
     return mockGenerationResponse(revisedPrompt);
   }
 
@@ -224,14 +207,10 @@ export async function remixSceneClip(
  * @returns Promise<Buffer> with video file content
  */
 export async function downloadVideoContent(videoId: string): Promise<Buffer> {
-  if (process.env.USE_SORA_MOCK === "true") {
+  if (USE_SORA_MOCK) {
     // Return a minimal mock MP4 buffer (or skip in real impl)
     console.log("[Sora] Mock: would download video", videoId);
     return Buffer.from([]);
-  }
-
-  if (!SORA_API_KEY) {
-    throw new Error("No API key configured for video download");
   }
 
   try {

@@ -92,11 +92,11 @@ Copy `.env.example` to `.env` and update the following:
 # Required
 DATABASE_URL=postgresql://musicapp:musicapp_dev@localhost:5432/musicapp
 REDIS_URL=redis://localhost:6379
-OPENAI_API_KEY=sk-your-key-here
+OPENAI_API_KEY=sk-your-key-here  # Required for all Sora operations
 
 # Optional (defaults provided)
 PORT=3000
-USE_SORA_MOCK=true  # Use mock data for testing
+USE_SORA_MOCK=false  # Set true only if you explicitly want to bypass Sora
 SORA_POLL_INTERVAL=60000
 NODE_ENV=development
 ```
@@ -281,12 +281,15 @@ lsof -ti:5432,6379,3000,5173 | xargs kill -9
 
 ### Sora API Errors
 ```bash
-# Enable mock mode in .env:
+# Enable mock mode in .env ONLY if you intentionally want to bypass Sora:
 USE_SORA_MOCK=true
 
 # Check API key is valid
 # Verify OpenAI account has Sora access
 ```
+
+If `USE_SORA_MOCK` is false (default), the backend will refuse to start until a valid
+`SORA_API_KEY` or `OPENAI_API_KEY` is configured, ensuring the real API stays active.
 
 ## Contributing
 

@@ -30,8 +30,8 @@ In Railway Dashboard → Variables tab, add:
 ```
 NODE_ENV=production
 JWT_SECRET=your-super-secret-key-here-change-this
-OPENAI_API_KEY=sk-your-key-here (optional, for Sora API)
-USE_SORA_MOCK=true (recommended for testing)
+OPENAI_API_KEY=sk-your-key-here (required for Sora API)
+USE_SORA_MOCK=false # set true only for non-production mocks
 ```
 
 ### 4. **Access Your App**
