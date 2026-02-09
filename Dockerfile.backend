@@ -5,16 +5,20 @@ RUN apk add --no-cache openssl
 
 WORKDIR /app
 
+# Copy package files
 COPY packages/backend/package*.json ./
+
+# Copy prisma schema BEFORE npm install so postinstall can generate client
+COPY packages/backend/prisma ./prisma
+
+# Install dependencies - this will trigger postinstall to generate Prisma client
 RUN npm install
 
-# Copy prisma schema early and generate client
-COPY packages/backend/prisma ./prisma
-RUN npx prisma generate
-
+# Copy source code
 COPY packages/backend/src ./src
 COPY packages/backend/tsconfig.json ./
 
+# Build TypeScript
 RUN npm run build
 
 EXPOSE 3000
