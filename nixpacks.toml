@@ -1,0 +1,3 @@
+[build]
+# Tell Railway to use Docker Compose for this project
+cmd = "docker-compose build"
