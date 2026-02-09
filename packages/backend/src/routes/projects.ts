@@ -40,7 +40,7 @@ router.post("/projects", async (req: Request, res: Response) => {
         userId: userId,
         storyboard: {
           create: {
-            lyricsData: lyricsData,
+            lyricsData: lyricsData as any,
           },
         },
       },
@@ -226,7 +226,7 @@ router.post(
         {
           projectId: req.params.id,
           type: job.type as any,
-          data: job.resultData || {},
+          payload: (job.resultData || {}) as Record<string, unknown>,
         },
         1 // higher priority for retries
       );

@@ -76,8 +76,8 @@ async function processGenerateScenes(payload: JobPayload, job: any) {
       throw new Error("Project or storyboard not found");
     }
 
-    const lyricsData = project.storyboard.lyricsData as LyricsData;
-    const totalScenes = Math.ceil(lyricsData.lines.length);
+    const lyricsData = (project.storyboard.lyricsData as unknown as LyricsData) || { lines: [], words: [] };
+    const totalScenes = Math.ceil(lyricsData.lines?.length || 1);
 
     // Calculate performance vs broll split
     const performanceCount = Math.ceil(totalScenes * project.performanceDensity);
@@ -236,11 +236,14 @@ async function processVocalExtraction(payload: JobPayload, job: any) {
     const audioBaseUrl = process.env.AUDIO_BASE_URL || "";
     const vocalSegment = await prisma.vocalSegment.create({
       data: {
+        projectId: projectId,
         sceneId: sceneId!,
         audioPath: vocalPath,
         audioUrl: audioBaseUrl
           ? `${audioBaseUrl}/project_${projectId}/scene_${sceneId!}/vocals.wav`
           : `file://${vocalPath}`,
+        startTime: scene.startTime,
+        endTime: scene.endTime,
         duration: scene.endTime - scene.startTime,
         format: "wav",
         phonemes: [],
@@ -389,13 +392,23 @@ async function processLipSyncPostProcess(payload: JobPayload, job: any) {
       scene.referenceImageUrl || undefined
     );
 
-    // Update scene with video
+    // Create scene version with Sora response
+    const version = await prisma.sceneVersion.create({
+      data: {
+        sceneId: sceneId!,
+        take: 1,
+        prompt: scene.prompt,
+        soraClipId: videoResponse.id,
+        soraClipUrl: videoResponse.url,
+      },
+    });
+
+    // Update scene to mark it completed and select the version
     const updatedScene = await prisma.scene.update({
       where: { id: sceneId! },
       data: {
-        soraClipId: videoResponse.id,
-        soraClipUrl: videoResponse.url,
         status: "completed",
+        selectedVersionId: version.id,
       },
     });
 
@@ -485,10 +498,13 @@ async function processStitchFinal(payload: JobPayload, job: any) {
     const scenes = await prisma.scene.findMany({
       where: { projectId },
       orderBy: { order: "asc" },
+      include: {
+        versions: true,
+      },
     });
 
     const completedScenes = scenes.filter(
-      (s: typeof scenes[number]) => s.soraClipUrl
+      (s: typeof scenes[number]) => s.selectedVersionId && s.versions.find((v: any) => v.id === s.selectedVersionId && v.soraClipUrl)
     );
 
     if (completedScenes.length === 0) {
@@ -500,11 +516,14 @@ async function processStitchFinal(payload: JobPayload, job: any) {
     );
 
     // Prepare video segments for stitching
-    const segments = completedScenes.map((scene: typeof completedScenes[number]) => ({
-      url: scene.soraClipUrl!,
-      duration: scene.endTime - scene.startTime,
-      sceneId: scene.id,
-    }));
+    const segments = completedScenes.map((scene: typeof completedScenes[number]) => {
+      const selectedVersion = scene.versions.find((v: any) => v.id === scene.selectedVersionId);
+      return {
+        url: selectedVersion?.soraClipUrl || "",
+        duration: scene.endTime - scene.startTime,
+        sceneId: scene.id,
+      };
+    });
 
     // Create output directory if it doesn't exist
     const outputDir = process.env.OUTPUT_VIDEO_DIR || "/tmp/videos";
