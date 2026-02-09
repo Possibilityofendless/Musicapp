@@ -112,8 +112,9 @@ export async function generateVideoWithSora(
 
         // Map the expected fields into our SoraVideoResponse
         // NOTE: adapt these paths to the real API response when available
-        const videoId = data?.id || data?.clip_id || `sora_${Date.now()}`;
-        const videoUrl = data?.url || data?.video_url || data?.result?.url;
+        const d: any = data;
+        const videoId = d?.id || d?.clip_id || `sora_${Date.now()}`;
+        const videoUrl = d?.url || d?.video_url || d?.result?.url;
 
         if (!videoUrl) {
           throw new Error("Sora response did not include a video URL");
@@ -122,8 +123,8 @@ export async function generateVideoWithSora(
         return {
           id: videoId,
           url: videoUrl,
-          duration: data?.duration || 0,
-          createdAt: data?.created_at || new Date().toISOString(),
+          duration: d?.duration || 0,
+          createdAt: d?.created_at || new Date().toISOString(),
         } as SoraVideoResponse;
       } catch (err) {
         console.error("[Sora] Real API call failed, falling back to mock:", err);
