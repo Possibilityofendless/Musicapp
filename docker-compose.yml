@@ -25,6 +25,9 @@ services:
       DATABASE_URL: postgresql://musicapp:musicapp_dev@postgres:5432/musicapp
       REDIS_URL: redis://redis:6379
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SORA_API_KEY: ${SORA_API_KEY}
+      SORA_API_BASE_URL: ${SORA_API_BASE_URL}
+      USE_SORA_MOCK: ${USE_SORA_MOCK}
       NODE_ENV: development
     depends_on:
       - postgres
@@ -48,6 +51,9 @@ services:
     environment:
       REDIS_URL: redis://redis:6379
       BACKEND_API_BASE: http://backend:3000/api
+      SORA_API_KEY: ${SORA_API_KEY}
+      SORA_API_BASE_URL: ${SORA_API_BASE_URL}
+      USE_SORA_MOCK: ${USE_SORA_MOCK}
     depends_on:
       - redis
       - backend
