@@ -141,7 +141,7 @@ Requirements:
  * Landscape/Nature B-roll
  * For outdoor, scenic B-roll
  */
-export function buildNatureB rollPrompt(context: BrollSceneContext): string {
+export function buildNatureBrollPrompt(context: BrollSceneContext): string {
   const { lyrics, mood, aesthetic = "cinematic" } = context;
 
   return `

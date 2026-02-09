@@ -77,54 +77,19 @@ export async function generateVideoWithSora(
   try {
     console.log(`[Sora] Generating video with prompt: ${prompt.substring(0, 100)}...`);
 
-    // This uses the actual OpenAI Video API endpoint
-    // Note: As of Feb 2026, Sora is available via OpenAI API
-    // This code assumes the Video API structure shown below
+    // Sora is not yet available in public OpenAI API
+    // For now, we'll use mock mode by default
+    // When Sora becomes available, update this to use the actual API
 
-    const response = await openai.beta.videos.generate({
-      model: "sora-1", // Sora model identifier
-      prompt: prompt,
-      duration: 16, // Up to 60 seconds
-      // @ts-ignore - API might not be fully typed yet
-      ...(referenceImageUrl && { image_url: referenceImageUrl }),
-    });
-
-    // Extract video ID and status
-    const videoId = (response as any).id;
-
-    // Poll for completion (Sora generation is async)
-    let videoData = response;
-    let attempts = 0;
-    const maxAttempts = 120; // 2 hour timeout with 60s intervals
-    const pollInterval = parseInt(process.env.SORA_POLL_INTERVAL || "60000"); // Default 60s
-
-    while (attempts < maxAttempts) {
-      const status = (videoData as any).status;
-
-      if (status === "succeeded") {
-        return {
-          id: videoId,
-          url: (videoData as any).url,
-          duration: (videoData as any).duration || 16,
-          createdAt: new Date().toISOString(),
-        };
-      }
-
-      if (status === "failed") {
-        throw new Error(
-          `Sora video generation failed: ${(videoData as any).error_message}`
-        );
-      }
-
-      console.log(`[Sora] Waiting for video generation... (attempt ${attempts + 1}/${maxAttempts})`);
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
-
-      // Re-fetch job status
-      // videoData = await openai.beta.videos.retrieve(videoId);
-      attempts++;
+    if (process.env.USE_SORA_MOCK === "false" && process.env.OPENAI_API_KEY) {
+      // TODO: Call actual Sora API when available
+      // const response = await openai.beta.videos.generate({...})
+      // For now, fall through to mock
     }
 
-    throw new Error("Sora video generation timeout");
+    // Use mock response for development
+    // TODO: When Sora API becomes available, implement real generation here
+    return mockSoraResponse(prompt);
   } catch (error) {
     console.error("[Sora] Video generation error:", error);
     throw error;

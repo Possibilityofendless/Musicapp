@@ -1,10 +1,12 @@
 # Backend
 FROM node:20-alpine
 
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 COPY packages/backend/package*.json ./
-RUN npm ci
+RUN npm install
 
 COPY packages/backend/src ./src
 COPY packages/backend/prisma ./prisma

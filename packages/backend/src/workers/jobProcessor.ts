@@ -221,7 +221,7 @@ async function processVocalExtraction(payload: JobPayload, job: any) {
     // Create temp directories
     const workDir = process.env.WORK_DIR || "/tmp/processing";
     const projectDir = path.join(workDir, projectId);
-    const sceneDir = path.join(projectDir, sceneId);
+    const sceneDir = path.join(projectDir, sceneId!);
 
     // Extract vocals from project audio
     const vocalPath = path.join(sceneDir, "vocals.wav");
@@ -233,12 +233,13 @@ async function processVocalExtraction(payload: JobPayload, job: any) {
     }
 
     // Create vocal segment record
+    const audioBaseUrl = process.env.AUDIO_BASE_URL || "";
     const vocalSegment = await prisma.vocalSegment.create({
       data: {
         sceneId: sceneId!,
         audioPath: vocalPath,
-        audioUrl: process.env.AUDIO_BASE_URL
-          ? `${process.env.AUDIO_BASE_URL}/project_${projectId}/scene_${sceneId}/vocals.wav`
+        audioUrl: audioBaseUrl
+          ? `${audioBaseUrl}/project_${projectId}/scene_${sceneId!}/vocals.wav`
           : `file://${vocalPath}`,
         duration: scene.endTime - scene.startTime,
         format: "wav",
@@ -486,7 +487,9 @@ async function processStitchFinal(payload: JobPayload, job: any) {
       orderBy: { order: "asc" },
     });
 
-    const completedScenes = scenes.filter((s) => s.soraClipUrl);
+    const completedScenes = scenes.filter(
+      (s: typeof scenes[number]) => s.soraClipUrl
+    );
 
     if (completedScenes.length === 0) {
       throw new Error("No completed scenes to stitch");
@@ -497,7 +500,7 @@ async function processStitchFinal(payload: JobPayload, job: any) {
     );
 
     // Prepare video segments for stitching
-    const segments = completedScenes.map((scene) => ({
+    const segments = completedScenes.map((scene: typeof completedScenes[number]) => ({
       url: scene.soraClipUrl!,
       duration: scene.endTime - scene.startTime,
       sceneId: scene.id,

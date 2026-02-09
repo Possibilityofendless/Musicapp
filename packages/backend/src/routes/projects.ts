@@ -334,14 +334,15 @@ router.post(
 
       if (project && scenes.length > 0) {
         const timePerScene = project.duration / scenes.length;
-        const timingUpdates = scenes.map((scene, idx) =>
-          prisma.scene.update({
-            where: { id: scene.id },
-            data: {
-              startTime: idx * timePerScene,
-              endTime: (idx + 1) * timePerScene,
-            },
-          })
+        const timingUpdates = scenes.map(
+          (scene: typeof scenes[number], idx: number) =>
+            prisma.scene.update({
+              where: { id: scene.id },
+              data: {
+                startTime: idx * timePerScene,
+                endTime: (idx + 1) * timePerScene,
+              },
+            })
         );
 
         await prisma.$transaction(timingUpdates);
