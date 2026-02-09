@@ -9,6 +9,8 @@
     "packages/workers"
   ],
   "scripts": {
+    "build": "npm run build --workspace backend",
+    "start": "npm run start --workspace backend",
     "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\""
   },
   "devDependencies": {
