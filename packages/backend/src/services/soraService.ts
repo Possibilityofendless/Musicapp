@@ -1,6 +1,10 @@
 import OpenAI from "openai";
 import { PerformancePrompt, SoraVideoResponse } from "../types";
 
+// Prefer an explicit Sora key when available; fall back to OPENAI_API_KEY
+const SORA_API_KEY = process.env.SORA_API_KEY || process.env.OPENAI_API_KEY;
+const SORA_API_BASE = process.env.SORA_API_BASE_URL || "https://api.openai.com/v1";
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -77,18 +81,57 @@ export async function generateVideoWithSora(
   try {
     console.log(`[Sora] Generating video with prompt: ${prompt.substring(0, 100)}...`);
 
-    // Sora is not yet available in public OpenAI API
-    // For now, we'll use mock mode by default
-    // When Sora becomes available, update this to use the actual API
+    // Sora may not be generally available yet. If mock mode is disabled
+    // and a Sora/OpenAI API key is present, attempt a real API request.
+    if (!useMock && SORA_API_KEY) {
+      try {
+        // Example HTTP request demonstrating how to call a Sora-style
+        // video generation endpoint. Adjust endpoint, payload and response
+        // parsing once the official Sora API spec is published.
+        const payload = {
+          prompt,
+          reference_image: referenceImageUrl,
+          // additional options could go here
+        };
 
-    if (process.env.USE_SORA_MOCK === "false" && process.env.OPENAI_API_KEY) {
-      // TODO: Call actual Sora API when available
-      // const response = await openai.beta.videos.generate({...})
-      // For now, fall through to mock
+        const res = await fetch(`${SORA_API_BASE}/videos/generate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${SORA_API_KEY}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Sora API error: ${res.status} ${text}`);
+        }
+
+        const data = await res.json();
+
+        // Map the expected fields into our SoraVideoResponse
+        // NOTE: adapt these paths to the real API response when available
+        const videoId = data?.id || data?.clip_id || `sora_${Date.now()}`;
+        const videoUrl = data?.url || data?.video_url || data?.result?.url;
+
+        if (!videoUrl) {
+          throw new Error("Sora response did not include a video URL");
+        }
+
+        return {
+          id: videoId,
+          url: videoUrl,
+          duration: data?.duration || 0,
+          createdAt: data?.created_at || new Date().toISOString(),
+        } as SoraVideoResponse;
+      } catch (err) {
+        console.error("[Sora] Real API call failed, falling back to mock:", err);
+        return mockSoraResponse(prompt);
+      }
     }
 
-    // Use mock response for development
-    // TODO: When Sora API becomes available, implement real generation here
+    // Fallback: use mock response for development or when no key is present
     return mockSoraResponse(prompt);
   } catch (error) {
     console.error("[Sora] Video generation error:", error);
