@@ -1,22 +1,90 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import prisma from "../lib/prisma";
 import { enqueueJob } from "../lib/queue";
 import { LyricsData } from "../types";
 
 const router = Router();
 
+// Configure multer for audio uploads
+const STORAGE_PATH = process.env.STORAGE_PATH || "/tmp/musicapp_storage";
+const AUDIO_DIR = path.join(STORAGE_PATH, "audio");
+
+// Ensure audio directory exists
+if (!fs.existsSync(AUDIO_DIR)) {
+  fs.mkdirSync(AUDIO_DIR, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, AUDIO_DIR);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, "audio-" + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [".mp3", ".wav", ".m4a", ".ogg", ".flac"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only audio files are allowed (mp3, wav, m4a, ogg, flac)"));
+    }
+  },
+});
+
 // Schema validation
 const CreateProjectSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  audioUrl: z.string().url(),
+  audioUrl: z.string().min(1), // Can be URL or local path
   duration: z.number().positive(),
   performanceDensity: z.number().min(0).max(1).default(0.4),
   lyrics: z.string().min(1),
 });
 
 type CreateProjectRequest = z.infer<typeof CreateProjectSchema>;
+
+/**
+ * POST /projects/upload-audio
+ * Upload audio file
+ */
+router.post(
+  "/projects/upload-audio",
+  upload.single("audio"),
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No audio file uploaded" });
+      }
+
+      // Return the file path
+      const audioUrl = path.join(AUDIO_DIR, req.file.filename);
+      res.json({ 
+        success: true,
+        audioUrl, 
+        filename: req.file.filename,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      });
+    } catch (error) {
+      console.error("[API] Error uploading audio:", error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : "Upload failed",
+      });
+    }
+  }
+);
 
 /**
  * POST /projects

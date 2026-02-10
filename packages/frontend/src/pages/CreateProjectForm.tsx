@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useStore } from "../store";
-import { FileUp, Music, Plus, AlertCircle } from "lucide-react";
+import { FileUp, Music, Plus, AlertCircle, Upload, X } from "lucide-react";
 import { useToast } from "../lib/useToast";
 import { LoadingSpinner } from "../components/LoadingStates";
+import { api } from "../lib/api";
 
 interface CreateProjectFormProps {
   onSuccess: () => void;
@@ -13,14 +14,91 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [duration, setDuration] = useState(180);
   const [performanceDensity, setPerformanceDensity] = useState(0.4);
   const [lyrics, setLyrics] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { createProject } = useStore();
   const toast = useToast();
+
+  const handleFileSelect = async (file: File) => {
+    // Validate file type
+    const allowedTypes = ["audio/mpeg", "audio/wav", "audio/mp3", "audio/x-m4a", "audio/ogg", "audio/flac"];
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|m4a|ogg|flac)$/i)) {
+      setValidationError("Please upload a valid audio file (mp3, wav, m4a, ogg, flac)");
+      return;
+    }
+
+    // Validate file size (50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+      setValidationError("File size must be less than 50MB");
+      return;
+    }
+
+    setAudioFile(file);
+    setValidationError(null);
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const formData = new FormData();
+      formData.append("audio", file);
+
+      const response = await fetch("http://localhost:3000/api/projects/upload-audio", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      setAudioUrl(data.audioUrl);
+      setUploadProgress(100);
+      toast.success(`Uploaded ${file.name}`);
+    } catch (error) {
+      console.error("Upload error:", error);
+      setValidationError("Failed to upload audio file");
+      setAudioFile(null);
+      toast.error("Upload failed");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setAudioFile(null);
+    setAudioUrl("");
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +114,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
       return;
     }
     if (!audioUrl.trim()) {
-      setValidationError("Audio URL is required");
+      setValidationError("Please upload an audio file or provide an audio URL");
       return;
     }
     if (duration <= 0) {
@@ -116,18 +194,98 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
               <Music className="w-4 h-4" />
-              Audio URL *
+              Audio File *
             </label>
+
+            {/* File Upload Area */}
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              className="border-2 border-dashed border-slate-600 rounded-lg p-6 hover:border-purple-500 transition"
+            >
+              {audioFile || audioUrl ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Music className="w-8 h-8 text-purple-400" />
+                    <div>
+                      <p className="text-white font-medium">
+                        {audioFile?.name || "Audio file uploaded"}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {audioFile ? `${(audioFile.size / 1024 / 1024).toFixed(2)} MB` : "Ready"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="p-2 hover:bg-slate-700 rounded text-gray-400 hover:text-red-400"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <Upload className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-300 mb-1">
+                    Drag and drop your audio file here
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    or click to browse (MP3, WAV, M4A, OGG, FLAC - Max 50MB)
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".mp3,.wav,.m4a,.ogg,.flac,audio/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="audio-upload"
+                  />
+                  <label
+                    htmlFor="audio-upload"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded cursor-pointer hover:bg-purple-700 transition"
+                  >
+                    <FileUp className="w-4 h-4" />
+                    Choose File
+                  </label>
+                </div>
+              )}
+
+              {/* Upload Progress */}
+              {isUploading && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-sm text-gray-400 mb-1">
+                    <span>Uploading...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div
+                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* OR divider */}
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 border-t border-slate-600" />
+              <span className="text-gray-500 text-sm">OR</span>
+              <div className="flex-1 border-t border-slate-600" />
+            </div>
+
+            {/* URL Input */}
             <input
-              type="url"
+              type="text"
               value={audioUrl}
               onChange={(e) => setAudioUrl(e.target.value)}
               placeholder="https://example.com/song.mp3"
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-              required
+              disabled={!!audioFile}
+              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <p className="text-xs text-gray-400 mt-1">
-              MP3, WAV, or other common audio format (must be publicly accessible)
+              Provide a direct URL to an audio file (if not uploading)
             </p>
           </div>
 
@@ -195,20 +353,25 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
             <button
               type="button"
               onClick={onCancel}
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
               className="flex-1 px-6 py-3 rounded font-medium text-gray-300 border border-slate-600 hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isLoading || !title.trim() || !audioUrl.trim() || !lyrics.trim()}
+              disabled={isLoading || isUploading || !title.trim() || !audioUrl.trim() || !lyrics.trim()}
               className="flex-1 px-6 py-3 rounded font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
                   <LoadingSpinner size="sm" />
                   Creating...
+                </>
+              ) : isUploading ? (
+                <>
+                  <LoadingSpinner size="sm" />
+                  Uploading...
                 </>
               ) : (
                 <>
