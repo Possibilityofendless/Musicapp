@@ -50,7 +50,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
       const formData = new FormData();
       formData.append("audio", file);
 
-      const response = await fetch("http://localhost:3000/api/projects/upload-audio", {
+      const response = await fetch("/api/projects/upload-audio", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
