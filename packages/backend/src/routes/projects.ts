@@ -63,12 +63,18 @@ router.post(
   upload.single("audio"),
   async (req: Request, res: Response) => {
     try {
+      console.log("[Upload] Received upload request");
+      console.log("[Upload] File:", req.file ? { name: req.file.originalname, size: req.file.size } : "none");
+
       if (!req.file) {
-        return res.status(400).json({ error: "No audio file uploaded" });
+        console.error("[Upload] No file in request");
+        return res.status(400).json({ success: false, error: "No audio file uploaded" });
       }
 
       // Return the file path
       const audioUrl = path.join(AUDIO_DIR, req.file.filename);
+      console.log("[Upload] File saved to:", audioUrl);
+      
       res.json({ 
         success: true,
         audioUrl, 

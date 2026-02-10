@@ -59,7 +59,8 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
       });
 
       if (!response.ok) {
-        throw new Error("Upload failed");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Upload failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -68,9 +69,10 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
       toast.success(`Uploaded ${file.name}`);
     } catch (error) {
       console.error("Upload error:", error);
-      setValidationError("Failed to upload audio file");
+      const errorMsg = error instanceof Error ? error.message : "Failed to upload audio file";
+      setValidationError(errorMsg);
       setAudioFile(null);
-      toast.error("Upload failed");
+      toast.error(errorMsg);
     } finally {
       setIsUploading(false);
     }
