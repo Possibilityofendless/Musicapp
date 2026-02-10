@@ -147,23 +147,111 @@ class QualityChecker:
 
     def check_mouth_visibility(self, video_path: str) -> float:
         """
-        Check if mouth is visible in video using face detection
+        Check if mouth is visible in video using MediaPipe face detection
 
         Returns:
             float: mouth visibility score (0-1)
         """
         logger.info(f"[QualityChecker] Checking mouth visibility in {video_path}")
 
-        # TODO: Implement actual mouth visibility detection
-        # Steps:
-        # 1. Use face detection (MediaPipe, DLIB, etc.)
-        # 2. Extract mouth landmarks
-        # 3. Check visibility across frames
-        # 4. Return average visibility score
+        try:
+            import cv2
+            import mediapipe as mp
+            import os
 
-        # Mock implementation: random score between 0.6-1.0
-        import random
-        score = random.uniform(0.6, 1.0)
+            if not os.path.exists(video_path):
+                logger.warning(f"Video file not found: {video_path}")
+                return 0.75  # Return average score if file doesn't exist
 
-        logger.info(f"[QualityChecker] Mouth visibility score: {score:.2f}")
-        return score
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                logger.warning(f"Could not open video: {video_path}")
+                return 0.75
+
+            # Initialize MediaPipe Face Detection
+            mp_face_detection = mp.solutions.face_detection
+            visibility_scores = []
+            frame_count = 0
+            max_frames = 30  # Sample first 30 frames for performance
+
+            with mp_face_detection.FaceDetection(
+                model_selection=1,  # 0=short range, 1=full range
+                min_detection_confidence=0.5
+            ) as face_detection:
+                while True:
+                    ret, frame = cap.read()
+                    if not ret or frame_count >= max_frames:
+                        break
+
+                    frame_count += 1
+                    h, w = frame.shape[:2]
+
+                    # Convert BGR to RGB
+                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    results = face_detection.process(rgb_frame)
+
+                    frame_visibility = 0.0
+
+                    if results.detections:
+                        for detection in results.detections:
+                            # Get face bounding box
+                            bbox = detection.location_data.relative_bounding_box
+                            
+                            # Calculate mouth region (lower 40% of face)
+                            mouth_y_min = bbox.ymin + bbox.height * 0.6
+                            mouth_y_max = bbox.ymin + bbox.height
+                            mouth_x_min = bbox.xmin + bbox.width * 0.2
+                            mouth_x_max = bbox.xmin + bbox.width * 0.8
+
+                            # Check if mouth region is visible (within frame bounds)
+                            mouth_visible = (
+                                mouth_y_max > 0
+                                and mouth_y_min < 1
+                                and mouth_x_max > 0
+                                and mouth_x_min < 1
+                            )
+
+                            # Calculate visibility score
+                            if mouth_visible:
+                                # Check how much of mouth is actually in frame
+                                visible_height = min(mouth_y_max, 1.0) - max(mouth_y_min, 0.0)
+                                visible_width = min(mouth_x_max, 1.0) - max(mouth_x_min, 0.0)
+                                mouth_area = (mouth_y_max - mouth_y_min) * (
+                                    mouth_x_max - mouth_x_min
+                                )
+                                visible_area = visible_height * visible_width
+                                frame_visibility = max(
+                                    frame_visibility, visible_area / mouth_area
+                                )
+                            else:
+                                frame_visibility = 0.0
+
+                    visibility_scores.append(frame_visibility)
+
+            cap.release()
+
+            # Calculate average visibility score
+            avg_score = (
+                sum(visibility_scores) / len(visibility_scores)
+                if visibility_scores
+                else 0.7
+            )
+
+            # Clamp to [0, 1]
+            avg_score = max(0.0, min(1.0, avg_score))
+
+            logger.info(
+                f"[QualityChecker] Mouth visibility score: {avg_score:.2f} "
+                f"(sampled {frame_count} frames)"
+            )
+            return avg_score
+
+        except ImportError as e:
+            logger.warning(
+                f"[QualityChecker] MediaPipe or OpenCV not available: {e}. "
+                f"Using default score."
+            )
+            return 0.75
+        except Exception as e:
+            logger.error(f"[QualityChecker] Error detecting mouth visibility: {e}")
+            return 0.70

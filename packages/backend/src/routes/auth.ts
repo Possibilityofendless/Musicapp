@@ -116,7 +116,7 @@ router.post("/login", async (req: Request, res: Response) => {
       expiresIn: "7d",
     });
 
-    res.json({
+    return res.json({
       user: {
         id: user.id,
         email: user.email,
@@ -131,7 +131,7 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(400).json({ error: message });
     }
     console.error("Login error:", error);
-    res.status(500).json({ error: "Login failed" });
+    return res.status(500).json({ error: "Login failed" });
   }
 });
 
