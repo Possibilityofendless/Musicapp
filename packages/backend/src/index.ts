@@ -22,7 +22,7 @@ app.use(cors());
 // Root endpoint
 app.get("/", (req, res) => {
   res.json({
-    name: "MusicApp API",
+    name: "imaginalllthat API",
     version: "2.0.0",
     status: "running",
     features: ["audio-analysis", "scene-generation", "lip-sync", "character-persistence"],

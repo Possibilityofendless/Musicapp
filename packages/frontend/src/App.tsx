@@ -76,7 +76,7 @@ function App() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="text-2xl">🎬</div>
-              <h1 className="text-2xl font-bold text-white">MusicApp</h1>
+            <h1 className="text-2xl font-bold text-white">imaginalllthat</h1>
               <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 px-2 py-1 rounded-full text-white">
                 AI Music Video
               </span>

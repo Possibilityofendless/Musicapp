@@ -1,4 +1,4 @@
-# MusicApp 🎬
+# imaginalllthat 🎬
 
 AI-powered music video generator with Sora integration and advanced lip-sync capabilities.
 
