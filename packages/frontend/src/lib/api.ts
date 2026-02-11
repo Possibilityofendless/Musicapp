@@ -1,4 +1,4 @@
-const API_BASE = "/api";
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 interface CreateProjectPayload {
   title: string;
@@ -66,14 +66,15 @@ function clearAuthToken(): void {
   localStorage.removeItem("authToken");
 }
 
+// Helper to add Authorization only (no content-type for multipart)
+function getAuthBearerHeader(): Record<string, string> {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 // Helper to make authenticated requests
 function getAuthHeaders(): Record<string, string> {
-  const token = getAuthToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
+  return { "Content-Type": "application/json", ...getAuthBearerHeader() };
 }
 
 export const api = {
@@ -121,6 +122,25 @@ export const api = {
   },
 
   // Projects
+  uploadAudio: async (file: File): Promise<{ audioUrl: string }> => {
+    const formData = new FormData();
+    formData.append("audio", file);
+
+    const res = await fetch(`${API_BASE}/projects/upload-audio`, {
+      method: "POST",
+      headers: getAuthBearerHeader(),
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `Upload failed: ${res.status} ${res.statusText}`
+      );
+    }
+
+    return res.json();
+  },
   listProjects: async (): Promise<Project[]> => {
     const res = await fetch(`${API_BASE}/projects`, {
       headers: getAuthHeaders(),

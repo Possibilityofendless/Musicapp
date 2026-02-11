@@ -47,23 +47,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append("audio", file);
-
-      const response = await fetch("/api/projects/upload-audio", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Upload failed: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await api.uploadAudio(file);
       setAudioUrl(data.audioUrl);
       setUploadProgress(100);
       toast.success(`Uploaded ${file.name}`);
