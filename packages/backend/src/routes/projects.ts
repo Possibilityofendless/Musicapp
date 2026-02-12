@@ -5,6 +5,8 @@ import path from "path";
 import fs from "fs";
 import prisma from "../lib/prisma";
 import { enqueueJob } from "../lib/queue";
+import { getAudioDuration } from "../lib/audioProcessor";
+import { transcribeAudio, formatTranscriptAsLyrics } from "../services/transcriptionService";
 import { LyricsData } from "../types";
 
 const router = Router();
@@ -47,9 +49,10 @@ const CreateProjectSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   audioUrl: z.string().min(1), // Can be URL or local path
-  duration: z.number().positive(),
+  duration: z.number().positive().optional(),
   performanceDensity: z.number().min(0).max(1).default(0.4),
-  lyrics: z.string().min(1),
+  lyrics: z.string().optional().default(""),
+  autoLyrics: z.boolean().optional().default(false),
 });
 
 type CreateProjectRequest = z.infer<typeof CreateProjectSchema>;
@@ -100,16 +103,52 @@ router.post("/projects", async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
     const body = CreateProjectSchema.parse(req.body);
+    const resolvedAudioPath = resolveLocalAudioPath(body.audioUrl);
+    let duration = body.duration ?? 0;
+    let lyrics = body.lyrics?.trim() || "";
+
+    if (body.autoLyrics || !lyrics) {
+      if (!resolvedAudioPath) {
+        return res.status(400).json({
+          success: false,
+          error: "Auto-lyrics requires a locally uploaded audio file.",
+        });
+      }
+      const transcript = await transcribeAudio(resolvedAudioPath);
+      lyrics = formatTranscriptAsLyrics(transcript);
+      if (!duration || duration <= 0) {
+        duration = await getAudioDuration(resolvedAudioPath);
+      }
+    }
+
+    if (!lyrics.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Lyrics are required (or enable auto-lyrics).",
+      });
+    }
+
+    if (!duration || duration <= 0) {
+      if (resolvedAudioPath) {
+        duration = await getAudioDuration(resolvedAudioPath);
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "Duration is required when audio is not local.",
+        });
+      }
+    }
 
     // Parse lyrics into timed segments
-    const lyricsData = parseLyrics(body.lyrics, body.duration);
+    const lyricsData = parseLyrics(lyrics, duration);
 
     const project = await prisma.project.create({
       data: {
         title: body.title,
         description: body.description,
         audioUrl: body.audioUrl,
-        duration: body.duration,
+        audioPath: resolvedAudioPath || undefined,
+        duration: duration,
         performanceDensity: body.performanceDensity,
         userId: userId,
         storyboard: {
@@ -135,7 +174,10 @@ router.post("/projects", async (req: Request, res: Response) => {
 
     res.json({ success: true, project });
   } catch (error) {
-    console.error("[API] Error creating project:", error);
+    console.error("[API] Error creating project:");
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
     res.status(400).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -232,6 +274,66 @@ router.post("/projects/:id/generate", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("[API] Error starting generation:", error);
     res.status(500).json({ error: "Failed to start generation" });
+  }
+});
+
+/**
+ * POST /projects/:id/stitch
+ * Stitch completed scenes into final video
+ */
+router.post("/projects/:id/stitch", async (req: Request, res: Response) => {
+  try {
+    const project = await prisma.project.findUnique({
+      where: { id: req.params.id },
+      include: {
+        scenes: {
+          include: { versions: true },
+        },
+      },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    const readyScenes = project.scenes.filter((scene) => {
+      if (!scene.selectedVersionId) {
+        return false;
+      }
+      return scene.versions.some((v) => v.id === scene.selectedVersionId && v.soraClipUrl);
+    });
+
+    if (readyScenes.length === 0) {
+      return res.status(400).json({
+        error: "No completed scenes available for stitching",
+      });
+    }
+
+    const existing = await prisma.processingJob.findFirst({
+      where: {
+        projectId: req.params.id,
+        type: "stitch_final",
+        status: { in: ["processing", "completed"] },
+      },
+    });
+
+    if (!existing) {
+      await enqueueJob({
+        projectId: req.params.id,
+        type: "stitch_final",
+        data: {},
+      });
+    }
+
+    await prisma.project.update({
+      where: { id: req.params.id },
+      data: { status: "processing" },
+    });
+
+    res.json({ success: true, message: "Stitching started" });
+  } catch (error) {
+    console.error("[API] Error starting stitch:", error);
+    res.status(500).json({ error: "Failed to start stitching" });
   }
 });
 
@@ -513,3 +615,10 @@ function parseLyrics(lyrics: string, totalDuration: number): LyricsData {
 }
 
 export default router;
+
+function resolveLocalAudioPath(audioUrl: string): string | null {
+  if (!audioUrl || !audioUrl.startsWith("/")) {
+    return null;
+  }
+  return fs.existsSync(audioUrl) ? audioUrl : null;
+}

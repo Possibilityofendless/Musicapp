@@ -20,6 +20,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
   const [duration, setDuration] = useState(180);
   const [performanceDensity, setPerformanceDensity] = useState(0.4);
   const [lyrics, setLyrics] = useState("");
+  const [autoLyrics, setAutoLyrics] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,8 +96,8 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
       setValidationError("Project title is required");
       return;
     }
-    if (!lyrics.trim()) {
-      setValidationError("Lyrics are required");
+    if (!autoLyrics && !lyrics.trim()) {
+      setValidationError("Lyrics are required unless auto-lyrics is enabled");
       return;
     }
     if (!audioUrl.trim()) {
@@ -117,7 +118,8 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
         audioUrl,
         duration,
         performanceDensity,
-        lyrics: lyrics.trim(),
+        lyrics: autoLyrics ? "" : lyrics.trim(),
+        autoLyrics,
       });
       toast.success("Project created successfully!");
       onSuccess();
@@ -321,16 +323,27 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Lyrics *
             </label>
+            <label className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+              <input
+                type="checkbox"
+                checked={autoLyrics}
+                onChange={(e) => setAutoLyrics(e.target.checked)}
+              />
+              Auto-generate lyrics from audio (OpenAI Whisper)
+            </label>
             <textarea
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               placeholder="Paste your song lyrics here, one line per scene..."
               rows={8}
               className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-mono text-sm"
-              required
+              disabled={autoLyrics}
+              required={!autoLyrics}
             />
             <p className="text-xs text-gray-400 mt-1">
-              Will be split into scenes. Each line becomes one scene.
+              {autoLyrics
+                ? "Transcription can take a minute and is used for scene generation."
+                : "Will be split into scenes. Each line becomes one scene."}
             </p>
           </div>
 
@@ -346,7 +359,13 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
             </button>
             <button
               type="submit"
-              disabled={isLoading || isUploading || !title.trim() || !audioUrl.trim() || !lyrics.trim()}
+              disabled={
+                isLoading ||
+                isUploading ||
+                !title.trim() ||
+                !audioUrl.trim() ||
+                (!autoLyrics && !lyrics.trim())
+              }
               className="flex-1 px-6 py-3 rounded font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (

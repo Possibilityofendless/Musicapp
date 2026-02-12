@@ -13,8 +13,18 @@ interface VideoSegment {
 
 /**
  * Download a video from URL and return local file path
+ * Handles both HTTP URLs and local file:// URLs
  */
 async function downloadVideo(url: string, destPath: string): Promise<void> {
+  // Handle local file:// URLs
+  if (url.startsWith("file://")) {
+    const sourcePath = url.replace("file://", "");
+    console.log(`[VideoStitcher] Copying local file from ${sourcePath} to ${destPath}`);
+    await fs.copyFile(sourcePath, destPath);
+    return;
+  }
+  
+  // Handle HTTP(S) URLs
   const cmd = `curl -o "${destPath}" "${url}"`;
   console.log(`[VideoStitcher] Downloading video to ${destPath}`);
   
@@ -78,14 +88,15 @@ export async function stitchVideos(
     await createConcatFile(segments, localPaths, concatFilePath);
 
     // Build ffmpeg command for concatenation
-    let ffmpegCmd = `ffmpeg -f concat -safe 0 -i "${concatFilePath}" -c copy`;
-
-    // Add audio if provided
+    let ffmpegCmd: string;
+    
     if (options.audioPath) {
-      ffmpegCmd += ` -i "${options.audioPath}" -c:a aac -map 0:v:0 -map 1:a:0`;
+      // Concatenate videos and add audio
+      ffmpegCmd = `ffmpeg -f concat -safe 0 -i "${concatFilePath}" -i "${options.audioPath}" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "${outputPath}"`;
+    } else {
+      // Just concatenate videos
+      ffmpegCmd = `ffmpeg -f concat -safe 0 -i "${concatFilePath}" -c copy "${outputPath}"`;
     }
-
-    ffmpegCmd += ` "${outputPath}"`;
 
     console.log(`[VideoStitcher] Running ffmpeg: ${ffmpegCmd}`);
     await execAsync(ffmpegCmd);

@@ -6,7 +6,8 @@ interface CreateProjectPayload {
   audioUrl: string;
   duration: number;
   performanceDensity: number;
-  lyrics: string;
+  lyrics?: string;
+  autoLyrics?: boolean;
 }
 
 interface Project {

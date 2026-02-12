@@ -453,6 +453,8 @@ async function processLipSyncPostProcess(payload: JobPayload, job: any) {
       },
     });
 
+    await maybeEnqueueFinalStitch(projectId);
+
     return { success: true, videoUrl: videoResponse.url };
   } catch (error) {
     await prisma.scene.update({
@@ -469,6 +471,50 @@ async function processLipSyncPostProcess(payload: JobPayload, job: any) {
     });
     throw error;
   }
+}
+
+async function maybeEnqueueFinalStitch(projectId: string) {
+  const existing = await prisma.processingJob.findFirst({
+    where: {
+      projectId,
+      type: "stitch_final",
+      status: { in: ["processing", "completed"] },
+    },
+  });
+
+  if (existing) {
+    return;
+  }
+
+  const scenes = await prisma.scene.findMany({
+    where: { projectId },
+    include: { versions: true },
+  });
+
+  if (scenes.length === 0) {
+    return;
+  }
+
+  const allReady = scenes.every((scene: typeof scenes[number]) => {
+    if (!scene.selectedVersionId) {
+      return false;
+    }
+    const selected = scene.versions.find((v: any) => v.id === scene.selectedVersionId);
+    return Boolean(selected?.soraClipUrl);
+  });
+
+  if (!allReady) {
+    return;
+  }
+
+  await processingQueue.add(
+    {
+      projectId,
+      type: "stitch_final",
+      data: {},
+    },
+    { priority: 2 }
+  );
 }
 
 /**

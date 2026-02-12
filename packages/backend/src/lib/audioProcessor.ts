@@ -106,7 +106,7 @@ export async function performForcedAlignment(
  */
 export async function getAudioDuration(audioPath: string): Promise<number> {
   try {
-    const cmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1:noprint_filename=1 "${audioPath}"`;
+    const cmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`;
     const { stdout } = await execAsync(cmd);
     return parseFloat(stdout.trim());
   } catch (error) {
