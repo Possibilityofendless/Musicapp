@@ -1,6 +1,6 @@
+import "./config"; // Load environment variables first
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import authRoutes, { authMiddleware } from "./routes/auth";
 import projectRoutes from "./routes/projects";
 import characterRoutes from "./routes/characters";
@@ -8,8 +8,6 @@ import sceneRoutes from "./routes/scenes";
 import storyboardRoutes from "./routes/storyboard";
 import { registerJobProcessors } from "./workers/jobProcessor";
 import prisma from "./lib/prisma";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;

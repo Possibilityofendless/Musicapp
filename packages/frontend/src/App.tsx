@@ -45,10 +45,13 @@ function App() {
   // Show loading screen while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="text-gray-400 mt-4">Loading...</p>
+          <div className="relative inline-block mb-6">
+            <LoadingSpinner size="lg" />
+            <div className="absolute inset-0 blur-2xl bg-purple-500 opacity-50 -z-10"></div>
+          </div>
+          <p className="text-gray-300 text-lg font-medium">Loading imaginalllthat...</p>
         </div>
       </div>
     );
@@ -69,26 +72,26 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-black bg-opacity-50 border-b border-slate-700 sticky top-0 z-40">
+      <header className="glass border-b border-slate-600/30 sticky top-0 z-40 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="text-2xl">🎬</div>
-            <h1 className="text-2xl font-bold text-white">imaginalllthat</h1>
-              <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 px-2 py-1 rounded-full text-white">
+              <div className="text-3xl drop-shadow-lg">🎬</div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">imaginalllthat</h1>
+              <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 px-3 py-1.5 rounded-full text-white font-semibold shadow-lg">
                 AI Music Video
               </span>
             </div>
             <div className="flex items-center gap-4">
-              <nav className="flex gap-4">
+              <nav className="flex gap-3">
                 <button
                   onClick={() => handleNavigation("list")}
-                  className={`px-4 py-2 rounded font-medium transition ${
+                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${
                     currentPage === "list"
-                      ? "bg-purple-600 text-white"
-                      : "text-gray-300 hover:text-white"
+                      ? "btn-gradient text-white shadow-lg"
+                      : "text-gray-300 hover:text-white hover:bg-slate-700/50"
                   }`}
                 >
                   Projects
@@ -96,24 +99,24 @@ function App() {
                 {currentPage !== "create" && (
                   <button
                     onClick={() => handleNavigation("create")}
-                    className="px-4 py-2 rounded font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90 transition"
+                    className="px-5 py-2.5 rounded-xl font-semibold text-white btn-gradient hover:shadow-lg hover:scale-[1.02] transition-all"
                   >
                     New Project
                   </button>
                 )}
               </nav>
               {user && (
-                <div className="flex items-center gap-4 pl-4 border-l border-slate-700">
+                <div className="flex items-center gap-4 pl-4 border-l border-slate-600/50">
                   <div className="text-sm">
-                    <p className="text-gray-300 font-medium">{user.name}</p>
-                    <p className="text-gray-500 text-xs">{user.email}</p>
+                    <p className="text-gray-200 font-semibold">{user.name}</p>
+                    <p className="text-gray-400 text-xs">{user.email}</p>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="p-2 text-gray-400 hover:text-white transition rounded hover:bg-slate-700"
+                    className="p-2.5 text-gray-400 hover:text-white transition-all rounded-lg hover:bg-slate-700/50 hover:scale-110"
                     title="Logout"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-5 h-5" />
                   </button>
                 </div>
               )}
@@ -124,12 +127,12 @@ function App() {
 
       {/* Error Alert */}
       {error && (
-        <div className="bg-red-900 bg-opacity-50 border border-red-700 text-red-100 px-6 py-4 flex items-center gap-3">
+        <div className="glass border-red-500/50 text-red-100 px-6 py-4 flex items-center gap-3 mx-6 mt-4 rounded-xl">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
           <button
             onClick={clearError}
-            className="ml-auto text-red-200 hover:text-red-100"
+            className="ml-auto text-red-300 hover:text-red-100 transition hover:scale-110"
           >
             ✕
           </button>

@@ -1,3 +1,4 @@
+import "../config"; // Load environment variables first
 import fs from "fs";
 import OpenAI from "openai";
 

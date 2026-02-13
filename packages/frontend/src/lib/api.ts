@@ -270,4 +270,14 @@ export const api = {
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },
+
+  // Video stitching
+  stitchVideo: async (projectId: string): Promise<any> => {
+    const res = await fetch(`${API_BASE}/projects/${projectId}/stitch`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
 };

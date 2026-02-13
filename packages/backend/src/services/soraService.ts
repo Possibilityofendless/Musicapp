@@ -1,3 +1,4 @@
+import "../config"; // Load environment variables first
 import { PerformancePrompt, SoraVideoResponse } from "../types";
 
 // Prefer an explicit Sora key when available; fall back to OPENAI_API_KEY

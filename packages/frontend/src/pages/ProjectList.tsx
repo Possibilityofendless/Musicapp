@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStore } from "../store";
-import { Play, Clock, Film, Trash2 } from "lucide-react";
+import { Play, Clock, Film, Trash2, AlertCircle } from "lucide-react";
 import { ListLoadingState } from "../components/LoadingStates";
 import { useToast } from "../lib/useToast";
 
@@ -62,32 +62,33 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
   return (
     <div>
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Projects</h2>
-        <p className="text-gray-400">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent mb-3">Projects</h2>
+        <p className="text-gray-300 text-lg">
           Create and manage your AI-generated music videos
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-900 bg-opacity-30 border border-red-700 rounded-lg text-red-100">
-          {error}
+        <div className="mb-6 p-4 glass rounded-xl border-red-500/50 text-red-100 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
       )}
 
       {isLoading && projects.length === 0 ? (
         <ListLoadingState count={3} />
       ) : projects.length === 0 ? (
-        <div className="text-center py-12 bg-slate-800 bg-opacity-40 rounded-lg border border-dashed border-slate-600">
-          <Film className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400 mb-4">No projects yet</p>
-          <p className="text-sm text-gray-500">Create your first music video project</p>
+        <div className="text-center py-16 glass rounded-2xl border-dashed border-slate-600 glow">
+          <Film className="w-16 h-16 text-purple-400 mx-auto mb-6 drop-shadow-lg" />
+          <p className="text-gray-300 mb-2 text-xl font-semibold">No projects yet</p>
+          <p className="text-gray-400">Create your first music video project</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {projects.map((project) => (
             <div
               key={project.id}
-              className={`bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-slate-500 transition cursor-pointer group ${
+              className={`glass rounded-2xl p-6 hover:border-purple-400/50 transition-all cursor-pointer group glow-on-hover ${
                 isDeleting === project.id ? "opacity-50" : ""
               }`}
             >
@@ -96,14 +97,14 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
                   onClick={() => onSelectProject(project.id)}
                   className="flex-1"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-bold text-white group-hover:text-purple-400 transition">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-bold text-white group-hover:text-purple-400 transition">
                       {project.title}
                     </h3>
                     <span
-                      className={`text-sm font-medium capitalize ${getStatusColor(
+                      className={`text-xs font-semibold uppercase px-3 py-1 rounded-full ${getStatusBg(
                         project.status
-                      )}`}
+                      )} ${getStatusColor(project.status)}`}
                     >
                       {project.status}
                     </span>
@@ -141,10 +142,10 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
                       e.stopPropagation();
                       onSelectProject(project.id);
                     }}
-                    className="p-2 hover:bg-purple-600 rounded text-gray-400 hover:text-white transition"
+                    className="p-2.5 hover:bg-purple-600/80 rounded-lg text-gray-400 hover:text-white transition-all hover:scale-110"
                     title="Edit project"
                   >
-                    <Play className="w-4 h-4" />
+                    <Play className="w-5 h-5" />
                   </button>
                   <button
                     onClick={(e) => {
@@ -152,10 +153,10 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
                       handleDelete(project.id);
                     }}
                     disabled={isDeleting === project.id}
-                    className="p-2 hover:bg-red-900 hover:bg-opacity-50 rounded text-gray-400 hover:text-red-400 transition disabled:opacity-50"
+                    className="p-2.5 hover:bg-red-600/80 rounded-lg text-gray-400 hover:text-red-300 transition-all hover:scale-110 disabled:opacity-50"
                     title="Delete project"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
               </div>

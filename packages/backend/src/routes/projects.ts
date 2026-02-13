@@ -338,6 +338,59 @@ router.post("/projects/:id/stitch", async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /projects/:id/download
+ * Get the final video download URL
+ */
+router.get("/projects/:id/download", async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+
+    const project = await prisma.project.findUnique({
+      where: { id: req.params.id },
+      include: {
+        videos: {
+          where: { type: "final" },
+          orderBy: { version: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    // Check ownership
+    if (project.userId !== userId) {
+      return res.status(403).json({ error: "Unauthorized - Project not yours" });
+    }
+
+    if (!project.videos || project.videos.length === 0) {
+      return res.status(404).json({
+        error: "No final video available",
+        message: "Generate and stitch scenes first",
+      });
+    }
+
+    const finalVideo = project.videos[0];
+    res.json({
+      success: true,
+      video: {
+        id: finalVideo.id,
+        url: finalVideo.url,
+        thumbnailUrl: finalVideo.thumbnailUrl,
+        duration: finalVideo.duration,
+        version: finalVideo.version,
+        createdAt: finalVideo.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("[API] Error getting download:", error);
+    res.status(500).json({ error: "Failed to get download" });
+  }
+});
+
+/**
  * GET /projects/:id/scenes
  * Get all scenes for a project
  */

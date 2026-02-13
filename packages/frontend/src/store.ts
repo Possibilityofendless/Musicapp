@@ -8,6 +8,17 @@ interface User {
   createdAt: string;
 }
 
+interface GeneratedVideo {
+  id: string;
+  projectId: string;
+  type: 'final' | 'intermediate' | 'sora_raw' | 'lip_synced';
+  url: string;
+  thumbnailUrl?: string;
+  duration?: number;
+  version: number;
+  createdAt: string;
+}
+
 interface Project {
   id: string;
   title: string;
@@ -17,6 +28,7 @@ interface Project {
   performanceDensity: number;
   status: string;
   progress: number;
+  videos?: GeneratedVideo[];
 }
 
 interface Scene {
@@ -72,6 +84,7 @@ interface AppStore {
   loadProject: (projectId: string) => Promise<void>;
   updateProject: (projectId: string, updates: Partial<Project>) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
+  stitchVideo: (projectId: string) => Promise<void>;
   loadScenes: (projectId: string) => Promise<void>;
   updateScene: (sceneId: string, updates: Partial<Scene>) => Promise<void>;
   deleteScene: (sceneId: string) => Promise<void>;
@@ -243,6 +256,24 @@ export const useStore = create<AppStore>((set) => ({
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to delete project";
+      set({ error: message });
+      throw error;
+    }
+  },
+
+  stitchVideo: async (projectId) => {
+    try {
+      await api.stitchVideo(projectId);
+      // Reload project to get updated status
+      const project = await api.getProject(projectId);
+      set((state) => ({
+        currentProject: project,
+        projects: state.projects.map((p) =>
+          p.id === projectId ? project : p
+        ),
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to stitch video";
       set({ error: message });
       throw error;
     }

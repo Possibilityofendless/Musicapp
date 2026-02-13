@@ -134,16 +134,16 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-slate-800 rounded-lg border border-slate-700 p-8">
-        <h2 className="text-3xl font-bold mb-2 text-white">Create New Project</h2>
-        <p className="text-gray-400 mb-8">
+      <div className="glass rounded-2xl p-8 shadow-2xl glow">
+        <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">Create New Project</h2>
+        <p className="text-gray-300 mb-8">
           Set up a new music video with AI-generated scenes and lip-sync
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Validation Error */}
           {validationError && (
-            <div className="flex items-center gap-3 p-4 bg-red-900 bg-opacity-30 border border-red-700 rounded-lg">
+            <div className="flex items-center gap-3 p-4 glass rounded-xl border-red-500/50">
               <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
               <p className="text-red-100">{validationError}</p>
             </div>
@@ -159,7 +159,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Awesome Music Video"
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+              className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500"
               required
             />
           </div>
@@ -174,7 +174,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the mood and style of your music video..."
               rows={3}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+              className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500"
             />
           </div>
 
@@ -189,7 +189,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
-              className="border-2 border-dashed border-slate-600 rounded-lg p-6 hover:border-purple-500 transition"
+              className="border-2 border-dashed border-slate-600 rounded-xl p-8 hover:border-purple-400 hover:bg-slate-700/30 transition-all duration-300"
             >
               {audioFile || audioUrl ? (
                 <div className="flex items-center justify-between">
@@ -207,7 +207,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
                   <button
                     type="button"
                     onClick={handleRemoveFile}
-                    className="p-2 hover:bg-slate-700 rounded text-gray-400 hover:text-red-400"
+                    className="p-2 hover:bg-red-600/80 rounded-lg text-gray-400 hover:text-red-300 transition-all hover:scale-110"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -231,9 +231,9 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
                   />
                   <label
                     htmlFor="audio-upload"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded cursor-pointer hover:bg-purple-700 transition"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white btn-gradient hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
                   >
-                    <FileUp className="w-4 h-4" />
+                    <FileUp className="w-5 h-5" />
                     Choose File
                   </label>
                 </div>
@@ -270,9 +270,9 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
               onChange={(e) => setAudioUrl(e.target.value)}
               placeholder="https://example.com/song.mp3"
               disabled={!!audioFile}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-400 mt-2">
               Provide a direct URL to an audio file (if not uploading)
             </p>
           </div>
@@ -289,7 +289,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
                 onChange={(e) => setDuration(Number(e.target.value))}
                 min="10"
                 max="600"
-                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-purple-500"
+                className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500"
                 required
               />
             </div>
@@ -306,13 +306,13 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
                   min="0"
                   max="1"
                   step="0.1"
-                  className="flex-1"
+                  className="flex-1 accent-purple-500"
                 />
-                <span className="text-white font-medium w-10 text-center">
+                <span className="text-white font-semibold w-12 text-center bg-slate-700/50 rounded-lg px-2 py-1">
                   {Math.round(performanceDensity * 100)}%
                 </span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 mt-2">
                 Percentage of lip-sync scenes vs cinematic B-roll
               </p>
             </div>
@@ -323,24 +323,25 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Lyrics *
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-400 mb-2">
+            <label className="flex items-center gap-2 text-sm text-gray-300 mb-3 cursor-pointer hover:text-purple-400 transition">
               <input
                 type="checkbox"
                 checked={autoLyrics}
                 onChange={(e) => setAutoLyrics(e.target.checked)}
+                className="w-4 h-4 rounded accent-purple-500"
               />
-              Auto-generate lyrics from audio (OpenAI Whisper)
+              <span className="font-medium">Auto-generate lyrics from audio (OpenAI Whisper)</span>
             </label>
             <textarea
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               placeholder="Paste your song lyrics here, one line per scene..."
               rows={8}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-mono text-sm"
+              className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500 font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={autoLyrics}
               required={!autoLyrics}
             />
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-400 mt-2">
               {autoLyrics
                 ? "Transcription can take a minute and is used for scene generation."
                 : "Will be split into scenes. Each line becomes one scene."}
@@ -353,7 +354,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
               type="button"
               onClick={onCancel}
               disabled={isLoading || isUploading}
-              className="flex-1 px-6 py-3 rounded font-medium text-gray-300 border border-slate-600 hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 rounded-xl font-semibold text-gray-300 bg-slate-700/50 border border-slate-600/30 hover:bg-slate-600/70 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               Cancel
             </button>
@@ -366,7 +367,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
                 !audioUrl.trim() ||
                 (!autoLyrics && !lyrics.trim())
               }
-              className="flex-1 px-6 py-3 rounded font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-6 py-3 rounded-xl font-semibold text-white btn-gradient hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 glow flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -380,7 +381,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                   Create Project
                 </>
               )}
