@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Music, AlertCircle } from "lucide-react";
 import { useStore } from "../store";
 import { useToast } from "../lib/useToast";
@@ -9,6 +10,7 @@ interface SignupPageProps {
 }
 
 export function SignupPage({ onLoginClick }: SignupPageProps) {
+  const navigate = useNavigate();
   const { signup } = useStore();
   const toast = useToast();
   const [name, setName] = useState("");
@@ -185,7 +187,7 @@ export function SignupPage({ onLoginClick }: SignupPageProps) {
             <p className="text-gray-400">
               Already have an account?{" "}
               <button
-                onClick={onLoginClick}
+                onClick={() => navigate("/")}
                 disabled={isLoading}
                 className="text-purple-400 hover:text-purple-300 hover:underline transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
