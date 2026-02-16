@@ -14,6 +14,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { Dashboard } from "./pages/Dashboard/Dashboard";
 import { ProjectsPage } from "./pages/Projects/ProjectsPage";
+import { ProjectDetailPage } from "./pages/Projects/ProjectDetailPage";
 import { ProjectList } from "./pages/ProjectList";
 import { CreateProjectForm } from "./pages/CreateProjectForm";
 import { ProjectEditor } from "./pages/ProjectEditor";
@@ -81,7 +82,7 @@ function AppContent() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/new" element={<CreateProjectForm onSuccess={() => {}} onCancel={() => {}} />} />
-            <Route path="/projects/:id" element={<ProjectEditor projectId="" onBack={() => {}} />} />
+            <Route path="/projects/:id" element={<ProjectDetailPage />} />
             <Route path="/runs" element={<RunsListPage />} />
             <Route path="/runs/:runId" element={<RunDetailPage />} />
             <Route path="/workflows" element={<WorkflowsPage />} />
@@ -94,6 +95,7 @@ function AppContent() {
             
             {/* Legacy routes for backward compatibility */}
             <Route path="/legacy/list" element={<ProjectList onSelectProject={() => {}} />} />
+            <Route path="/legacy/editor/:id" element={<ProjectEditor projectId="" onBack={() => {}} />} />
           </Routes>
         </main>
       </div>
