@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import { useStore } from "../store";
-import { Play, Clock, Film, Trash2, AlertCircle } from "lucide-react";
+import {
+  Play,
+  Clock,
+  Film,
+  Trash2,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react";
 import { ListLoadingState } from "../components/LoadingStates";
 import { useToast } from "../lib/useToast";
 
@@ -12,6 +21,23 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
   const { projects, loadProjects, deleteProject, isLoading, error } = useStore();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const toast = useToast();
+  const statusCounts = projects.reduce(
+    (acc, project) => {
+      const key = project.status as "completed" | "processing" | "failed";
+      if (acc[key] !== undefined) {
+        acc[key] += 1;
+      }
+      return acc;
+    },
+    { completed: 0, processing: 0, failed: 0 }
+  );
+  const averageProgress = projects.length
+    ? Math.round(
+        (projects.reduce((sum, project) => sum + (project.progress ?? 0), 0) /
+          projects.length) *
+          100
+      )
+    : 0;
 
   useEffect(() => {
     loadProjects().catch((err) => {
@@ -33,29 +59,16 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusClasses = (status: string) => {
     switch (status) {
       case "completed":
-        return "text-green-400";
+        return "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-emerald-500/30";
       case "processing":
-        return "text-yellow-400";
+        return "bg-amber-500/15 text-amber-200 border border-amber-500/40 shadow-amber-500/30";
       case "failed":
-        return "text-red-400";
+        return "bg-rose-500/15 text-rose-200 border border-rose-500/40 shadow-rose-500/30";
       default:
-        return "text-gray-400";
-    }
-  };
-
-  const getStatusBg = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-900 bg-opacity-30";
-      case "processing":
-        return "bg-yellow-900 bg-opacity-30";
-      case "failed":
-        return "bg-red-900 bg-opacity-30";
-      default:
-        return "bg-gray-900 bg-opacity-30";
+        return "bg-slate-500/15 text-slate-200 border border-slate-500/40";
     }
   };
 
@@ -75,6 +88,39 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
         </div>
       )}
 
+      {projects.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="glass rounded-2xl p-4 border border-slate-600/30 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-300" />
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-widest">Completed</p>
+              <p className="text-2xl font-bold text-white">{statusCounts.completed}</p>
+            </div>
+          </div>
+          <div className="glass rounded-2xl p-4 border border-slate-600/30 flex items-center gap-3">
+            <Loader2 className="w-5 h-5 text-amber-300" />
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-widest">Processing</p>
+              <p className="text-2xl font-bold text-white">{statusCounts.processing}</p>
+            </div>
+          </div>
+          <div className="glass rounded-2xl p-4 border border-slate-600/30 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-300" />
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-widest">Needs attention</p>
+              <p className="text-2xl font-bold text-white">{statusCounts.failed}</p>
+            </div>
+          </div>
+          <div className="glass rounded-2xl p-4 border border-slate-600/30 flex items-center gap-3">
+            <Clock className="w-5 h-5 text-purple-300" />
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-widest">Avg progress</p>
+              <p className="text-2xl font-bold text-white">{averageProgress}%</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isLoading && projects.length === 0 ? (
         <ListLoadingState count={3} />
       ) : projects.length === 0 ? (
@@ -88,23 +134,24 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
           {projects.map((project) => (
             <div
               key={project.id}
-              className={`glass rounded-2xl p-6 hover:border-purple-400/50 transition-all cursor-pointer group glow-on-hover ${
+              className={`glass-card rounded-2xl p-6 border border-transparent hover:border-purple-400/50 transition-all cursor-pointer group glow-on-hover relative overflow-hidden ${
                 isDeleting === project.id ? "opacity-50" : ""
               }`}
             >
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 pointer-events-none" />
               <div className="flex items-start justify-between mb-4">
                 <div
                   onClick={() => onSelectProject(project.id)}
-                  className="flex-1"
+                  className="flex-1 relative z-10"
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-xl font-bold text-white group-hover:text-purple-400 transition">
                       {project.title}
                     </h3>
                     <span
-                      className={`text-xs font-semibold uppercase px-3 py-1 rounded-full ${getStatusBg(
+                      className={`text-xs font-semibold uppercase px-3 py-1.5 rounded-full shadow ${getStatusClasses(
                         project.status
-                      )} ${getStatusColor(project.status)}`}
+                      )}`}
                     >
                       {project.status}
                     </span>
@@ -117,7 +164,9 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
                     <div className="flex items-center gap-2 text-gray-400 text-sm">
                       <Clock className="w-4 h-4" />
                       <span>
-                        {new Date(project.createdAt).toLocaleDateString()}
+                        {project.createdAt
+                          ? new Date(project.createdAt).toLocaleDateString()
+                          : "–"}
                       </span>
                     </div>
                     {project.progress > 0 && (
@@ -136,7 +185,7 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 ml-4">
+                <div className="flex items-center gap-2 ml-4 relative z-10">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

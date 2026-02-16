@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Music, AlertCircle } from "lucide-react";
+import { Music, AlertCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { useStore } from "../store";
 import { useToast } from "../lib/useToast";
 import { LoadingSpinner } from "../components/LoadingStates";
@@ -7,6 +7,12 @@ import { LoadingSpinner } from "../components/LoadingStates";
 interface LoginPageProps {
   onSignupClick: () => void;
 }
+
+const highlights = [
+  "Enterprise-grade auth",
+  "Projects autosave",
+  "Live rendering status",
+];
 
 export function LoginPage({ onSignupClick }: LoginPageProps) {
   const { login } = useStore();
@@ -48,13 +54,12 @@ export function LoginPage({ onSignupClick }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background orbs */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="floating-orb bg-purple-600 top-0 left-0 animate-blob" />
+      <div className="floating-orb bg-pink-500 top-16 right-0 animate-blob animation-delay-2000" />
+      <div className="floating-orb bg-indigo-500 bottom-0 left-1/2 animate-blob animation-delay-4000" />
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-lg relative z-10">
         {/* Logo Section */}
         <div className="text-center mb-10">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -70,7 +75,7 @@ export function LoginPage({ onSignupClick }: LoginPageProps) {
         </div>
 
         {/* Login Form */}
-        <div className="glass rounded-2xl p-8 shadow-2xl glow">
+        <div className="glass-strong rounded-3xl p-8 shadow-2xl glow">
           <h2 className="text-2xl font-bold text-white mb-6">Welcome Back</h2>
 
           {/* Validation Error */}
@@ -93,7 +98,7 @@ export function LoginPage({ onSignupClick }: LoginPageProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 disabled={isLoading}
-                className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="input-base hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -108,7 +113,7 @@ export function LoginPage({ onSignupClick }: LoginPageProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={isLoading}
-                className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="input-base hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -144,11 +149,28 @@ export function LoginPage({ onSignupClick }: LoginPageProps) {
           </div>
         </div>
 
-        {/* Demo Credentials */}
-        <div className="mt-8 glass rounded-xl p-4 border-slate-600/50">
-          <p className="text-xs text-gray-300 mb-2 font-semibold">Demo Credentials:</p>
-          <p className="text-xs text-gray-400">Email: demo@example.com</p>
-          <p className="text-xs text-gray-400">Password: password123</p>
+        <div className="mt-8 grid gap-4">
+          <div className="glass rounded-2xl p-4 border border-slate-600/40 flex items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-purple-400" />
+            <div>
+              <p className="text-sm font-semibold text-white">Demo Credentials</p>
+              <p className="text-xs text-gray-400">demo@example.com • password123</p>
+            </div>
+          </div>
+          <div className="glass rounded-2xl p-4 border border-slate-600/40">
+            <div className="flex items-center gap-2 mb-3 text-xs uppercase tracking-widest text-purple-300">
+              <Sparkles className="w-4 h-4" />
+              Highlights
+            </div>
+            <div className="grid gap-2">
+              {highlights.map((item) => (
+                <div key={item} className="text-sm text-gray-300 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-purple-400/60 shadow" />
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useStore } from "../store";
-import { Edit2, Save, X, Mic, Clapperboard } from "lucide-react";
+import { Edit2, Save, X, Mic, Clapperboard, Download } from "lucide-react";
 
 interface Scene {
   id: string;
@@ -44,15 +44,45 @@ export function SceneCard({ scene, isSelected, onSelect }: SceneCardProps) {
     );
   };
 
+  const statusConfig: Record<
+    string,
+    { dot: string; label: string; badge: string }
+  > = {
+    completed: {
+      dot: "bg-green-400 shadow-green-400/50",
+      label: "Completed",
+      badge: "bg-emerald-500/15 text-emerald-200 border border-emerald-500/30",
+    },
+    processing: {
+      dot: "bg-yellow-400 shadow-yellow-400/50",
+      label: "Processing",
+      badge: "bg-amber-500/15 text-amber-100 border border-amber-500/30",
+    },
+    failed: {
+      dot: "bg-red-400 shadow-red-400/50",
+      label: "Failed",
+      badge: "bg-rose-500/15 text-rose-100 border border-rose-500/30",
+    },
+  };
+
+  const currentStatus =
+    statusConfig[scene.status] ||
+    {
+      dot: "bg-slate-400",
+      label: "Pending",
+      badge: "bg-slate-500/15 text-slate-200 border border-slate-500/30",
+    };
+
   return (
     <div
-      className={`border rounded-2xl p-6 cursor-pointer transition-all duration-300 ${
+      className={`glass-card rounded-2xl p-6 cursor-pointer transition-all duration-300 relative overflow-hidden group ${
         isSelected
-          ? "glass border-purple-500/70 shadow-lg glow"
-          : "glass border-slate-600/30 hover:border-purple-400/50 hover:shadow-md"
+          ? "border border-purple-500/70 shadow-lg glow"
+          : "border border-slate-600/30 hover:border-purple-400/50 hover:shadow-md"
       }`}
       onClick={() => onSelect(isSelected ? null : scene.id)}
     >
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/10 pointer-events-none" />
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3">
@@ -76,27 +106,47 @@ export function SceneCard({ scene, isSelected, onSelect }: SceneCardProps) {
           <p className="text-white font-medium line-clamp-2 text-base">{scene.lyricExcerpt}</p>
         </div>
 
-        <div className="flex items-center gap-2 ml-4">
-          {scene.status === "completed" && (
-            <div className="w-2.5 h-2.5 bg-green-400 rounded-full shadow-lg shadow-green-400/50" />
-          )}
-          {scene.status === "processing" && (
-            <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse shadow-lg shadow-yellow-400/50" />
-          )}
-          {scene.status === "failed" && (
-            <div className="w-2.5 h-2.5 bg-red-400 rounded-full shadow-lg shadow-red-400/50" />
-          )}
+        <div className="flex flex-col items-end gap-2 ml-4 relative z-10">
+          <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${currentStatus.badge}`}>
+            {currentStatus.label}
+          </span>
+          <div
+            className={`w-2.5 h-2.5 rounded-full shadow-lg ${currentStatus.dot} ${
+              scene.status === "processing" ? "animate-pulse" : ""
+            }`}
+          />
         </div>
       </div>
 
       {scene.soraClipUrl && (
-        <div className="mb-4 bg-slate-700/30 rounded-xl aspect-video flex items-center justify-center overflow-hidden border border-slate-600/30">
-          <video
-            src={scene.soraClipUrl}
-            className="w-full h-full object-cover"
-            controls
-          />
-        </div>
+        <>
+          <div className="mb-4 glass rounded-xl aspect-video overflow-hidden border border-slate-500/30 relative">
+            <video
+              src={scene.soraClipUrl}
+              className="w-full h-full object-cover"
+              controls
+            />
+            <div className="absolute inset-0 pointer-events-none border border-white/5 rounded-xl" />
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 text-sm">
+            <a
+              href={scene.soraClipUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 text-purple-300 hover:text-purple-100 font-medium hover:underline transition flex items-center gap-2"
+            >
+              View Generated Video →
+            </a>
+            <a
+              href={scene.soraClipUrl}
+              download
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-700/60 border border-slate-500/40 hover:border-purple-400/70 hover:scale-[1.02] transition"
+            >
+              <Download className="w-4 h-4" />
+              Download Clip
+            </a>
+          </div>
+        </>
       )}
 
       {isSelected && (

@@ -28,6 +28,8 @@ interface Project {
   performanceDensity: number;
   status: string;
   progress: number;
+  createdAt?: string;
+  updatedAt?: string;
   videos?: GeneratedVideo[];
 }
 
@@ -35,10 +37,18 @@ interface Scene {
   id: string;
   projectId: string;
   order: number;
+  startTime?: number;
+  endTime?: number;
   sceneType: "performance" | "broll";
+  prompt?: string;
   lyricExcerpt: string;
   status: string;
   soraClipUrl?: string;
+  finalVideoUrl?: string;
+  lipSyncEnabled?: boolean;
+  lipSyncMethod?: "sora_native" | "post_process";
+  referenceImageUrl?: string;
+  mouthVisibilityScore?: number;
 }
 
 interface Job {

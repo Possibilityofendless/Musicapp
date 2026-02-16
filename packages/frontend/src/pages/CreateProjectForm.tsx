@@ -159,7 +159,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Awesome Music Video"
-              className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500"
+              className="input-base hover:border-slate-500"
               required
             />
           </div>
@@ -174,7 +174,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the mood and style of your music video..."
               rows={3}
-              className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500"
+              className="input-base hover:border-slate-500"
             />
           </div>
 
@@ -189,9 +189,11 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
-              className="border-2 border-dashed border-slate-600 rounded-xl p-8 hover:border-purple-400 hover:bg-slate-700/30 transition-all duration-300"
+              className="glass-card border-2 border-dashed border-slate-600/70 rounded-2xl p-8 hover:border-purple-400/70 hover:bg-slate-800/40 transition-all duration-300 relative overflow-hidden"
             >
-              {audioFile || audioUrl ? (
+              <div className="absolute inset-0 pointer-events-none opacity-0 hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/10" />
+              <div className="relative z-10">
+                {audioFile || audioUrl ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Music className="w-8 h-8 text-purple-400" />
@@ -212,48 +214,49 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-              ) : (
-                <div className="text-center">
-                  <Upload className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                  <p className="text-gray-300 mb-1">
-                    Drag and drop your audio file here
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    or click to browse (MP3, WAV, M4A, OGG, FLAC - Max 50MB)
-                  </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".mp3,.wav,.m4a,.ogg,.flac,audio/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    id="audio-upload"
-                  />
-                  <label
-                    htmlFor="audio-upload"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white btn-gradient hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
-                  >
-                    <FileUp className="w-5 h-5" />
-                    Choose File
-                  </label>
-                </div>
-              )}
-
-              {/* Upload Progress */}
-              {isUploading && (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-sm text-gray-400 mb-1">
-                    <span>Uploading...</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
-                    <div
-                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
+                ) : (
+                  <div className="text-center">
+                    <Upload className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                    <p className="text-gray-300 mb-1">
+                      Drag and drop your audio file here
+                    </p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      or click to browse (MP3, WAV, M4A, OGG, FLAC - Max 50MB)
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".mp3,.wav,.m4a,.ogg,.flac,audio/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="audio-upload"
                     />
+                    <label
+                      htmlFor="audio-upload"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white btn-gradient hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
+                    >
+                      <FileUp className="w-5 h-5" />
+                      Choose File
+                    </label>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Upload Progress */}
+                {isUploading && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-sm text-gray-400 mb-1">
+                      <span>Uploading...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-700 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* OR divider */}
@@ -270,7 +273,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
               onChange={(e) => setAudioUrl(e.target.value)}
               placeholder="https://example.com/song.mp3"
               disabled={!!audioFile}
-              className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="input-base hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <p className="text-xs text-gray-400 mt-2">
               Provide a direct URL to an audio file (if not uploading)
@@ -289,7 +292,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
                 onChange={(e) => setDuration(Number(e.target.value))}
                 min="10"
                 max="600"
-                className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500"
+                className="input-base hover:border-slate-500"
                 required
               />
             </div>
@@ -337,7 +340,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
               onChange={(e) => setLyrics(e.target.value)}
               placeholder="Paste your song lyrics here, one line per scene..."
               rows={8}
-              className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all hover:border-slate-500 font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="input-base hover:border-slate-500 font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={autoLyrics}
               required={!autoLyrics}
             />
@@ -354,7 +357,7 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
               type="button"
               onClick={onCancel}
               disabled={isLoading || isUploading}
-              className="flex-1 px-6 py-3 rounded-xl font-semibold text-gray-300 bg-slate-700/50 border border-slate-600/30 hover:bg-slate-600/70 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="flex-1 px-6 py-3 rounded-xl font-semibold btn-outline hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               Cancel
             </button>
