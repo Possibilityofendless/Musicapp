@@ -1,46 +1,41 @@
 import "./styles/globals.css";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useStore } from "./store";
-import { CreateProjectForm } from "./pages/CreateProjectForm";
-import { ProjectEditor } from "./pages/ProjectEditor";
-import { ProjectList } from "./pages/ProjectList";
-import { LoginPage } from "./pages/LoginPage";
-import { SignupPage } from "./pages/SignupPage";
-import { AlertCircle, LogOut } from "lucide-react";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastContainer } from "./components/Toast";
 import { useToastStore } from "./lib/useToast";
 import { LoadingSpinner } from "./components/LoadingStates";
+import { Sidebar } from "./components/Layout/Sidebar";
+import { TopBar } from "./components/Layout/TopBar";
 
-function App() {
-  const [currentPage, setCurrentPage] = useState<"list" | "editor" | "create" | "login" | "signup">(
-    "login"
-  );
-  const { currentProjectId, error, clearError, isAuthenticated, authLoading, user, checkAuth, logout } = useStore();
+// Import pages
+import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
+import { Dashboard } from "./pages/Dashboard/Dashboard";
+import { ProjectsPage } from "./pages/Projects/ProjectsPage";
+import { ProjectDetailPage } from "./pages/Projects/ProjectDetailPage";
+import { ProjectList } from "./pages/ProjectList";
+import { CreateProjectForm } from "./pages/CreateProjectForm";
+import { ProjectEditor } from "./pages/ProjectEditor";
+import { RunsListPage } from "./pages/Runs/RunsListPage";
+import { RunDetailPage } from "./pages/Runs/RunDetailPage";
+import { WorkflowsPage } from "./pages/Workflows/WorkflowsPage";
+import { AgentStudioPage } from "./pages/AgentStudio/AgentStudioPage";
+import { RepoPage } from "./pages/Repo/RepoPage";
+import { DeploymentsPage } from "./pages/Deployments/DeploymentsPage";
+import { KnowledgePage } from "./pages/Knowledge/KnowledgePage";
+import { BillingPage } from "./pages/Billing/BillingPage";
+import { SettingsPage } from "./pages/Settings/SettingsPage";
+
+function AppContent() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { isAuthenticated, authLoading, checkAuth } = useStore();
   const { toasts, removeToast } = useToastStore();
 
-  // Check authentication on mount
   useEffect(() => {
     checkAuth();
   }, []);
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      setCurrentPage("login");
-    } else if (!authLoading && isAuthenticated && currentPage === "login") {
-      setCurrentPage("list");
-    }
-  }, [isAuthenticated, authLoading]);
-
-  const handleNavigation = (page: "list" | "editor" | "create") => {
-    setCurrentPage(page);
-  };
-
-  const handleLogout = () => {
-    logout();
-    setCurrentPage("login");
-  };
 
   // Show loading screen while checking auth
   if (authLoading) {
@@ -51,7 +46,7 @@ function App() {
             <LoadingSpinner size="lg" />
             <div className="absolute inset-0 blur-2xl bg-purple-500 opacity-50 -z-10"></div>
           </div>
-          <p className="text-gray-300 text-lg font-medium">Loading imaginalllthat...</p>
+          <p className="text-gray-300 text-lg font-medium">Loading No-i-InTEAM...</p>
         </div>
       </div>
     );
@@ -61,109 +56,61 @@ function App() {
   if (!isAuthenticated) {
     return (
       <>
-        {currentPage === "login" ? (
-          <LoginPage onSignupClick={() => setCurrentPage("signup")} />
-        ) : (
-          <SignupPage onLoginClick={() => setCurrentPage("login")} />
-        )}
+        <Routes>
+          <Route path="/signup" element={<SignupPage onLoginClick={() => {}} />} />
+          <Route path="*" element={<LoginPage onSignupClick={() => {}} />} />
+        </Routes>
         <ToastContainer toasts={toasts} onClose={removeToast} />
       </>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="glass border-b border-slate-600/30 sticky top-0 z-40 backdrop-blur-lg">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl drop-shadow-lg">🎬</div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">imaginalllthat</h1>
-              <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 px-3 py-1.5 rounded-full text-white font-semibold shadow-lg">
-                AI Music Video
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <nav className="flex gap-3">
-                <button
-                  onClick={() => handleNavigation("list")}
-                  className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${
-                    currentPage === "list"
-                      ? "btn-gradient text-white shadow-lg"
-                      : "text-gray-300 hover:text-white hover:bg-slate-700/50"
-                  }`}
-                >
-                  Projects
-                </button>
-                {currentPage !== "create" && (
-                  <button
-                    onClick={() => handleNavigation("create")}
-                    className="px-5 py-2.5 rounded-xl font-semibold text-white btn-gradient hover:shadow-lg hover:scale-[1.02] transition-all"
-                  >
-                    New Project
-                  </button>
-                )}
-              </nav>
-              {user && (
-                <div className="flex items-center gap-4 pl-4 border-l border-slate-600/50">
-                  <div className="text-sm">
-                    <p className="text-gray-200 font-semibold">{user.name}</p>
-                    <p className="text-gray-400 text-xs">{user.email}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="p-2.5 text-gray-400 hover:text-white transition-all rounded-lg hover:bg-slate-700/50 hover:scale-110"
-                    title="Logout"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen flex">
+      {/* Sidebar */}
+      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
 
-      {/* Error Alert */}
-      {error && (
-        <div className="glass border-red-500/50 text-red-100 px-6 py-4 flex items-center gap-3 mx-6 mt-4 rounded-xl">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
-          <button
-            onClick={clearError}
-            className="ml-auto text-red-300 hover:text-red-100 transition hover:scale-110"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      {/* Main Content Area */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? "ml-[72px]" : "ml-[280px]"}`}>
+        {/* Top Bar */}
+        <TopBar />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {currentPage === "list" && (
-          <ProjectList onSelectProject={(id) => {
-            useStore.setState({ currentProjectId: id });
-            handleNavigation("editor");
-          }} />
-        )}
-        {currentPage === "create" && (
-          <CreateProjectForm
-            onSuccess={() => handleNavigation("list")}
-            onCancel={() => handleNavigation("list")}
-          />
-        )}
-        {currentPage === "editor" && currentProjectId && (
-          <ProjectEditor
-            projectId={currentProjectId}
-            onBack={() => handleNavigation("list")}
-          />
-        )}
-      </main>
+        {/* Page Content */}
+        <main className="flex-1 p-8 overflow-y-auto">
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/new" element={<CreateProjectForm onSuccess={() => {}} onCancel={() => {}} />} />
+            <Route path="/projects/:id" element={<ProjectDetailPage />} />
+            <Route path="/runs" element={<RunsListPage />} />
+            <Route path="/runs/:runId" element={<RunDetailPage />} />
+            <Route path="/workflows" element={<WorkflowsPage />} />
+            <Route path="/agent-studio" element={<AgentStudioPage />} />
+            <Route path="/repo" element={<RepoPage />} />
+            <Route path="/deployments" element={<DeploymentsPage />} />
+            <Route path="/knowledge" element={<KnowledgePage />} />
+            <Route path="/billing" element={<BillingPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            
+            {/* Legacy routes for backward compatibility */}
+            <Route path="/legacy/list" element={<ProjectList onSelectProject={() => {}} />} />
+            <Route path="/legacy/editor/:id" element={<ProjectEditor projectId="" onBack={() => {}} />} />
+          </Routes>
+        </main>
+      </div>
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 
